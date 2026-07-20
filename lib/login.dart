@@ -1,5 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
+import 'package:cafa_boardgame/config/app_config.dart';
+import 'package:cafa_boardgame/utils/date_util.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'employeemoule/orders.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -8,15 +17,151 @@ class Login extends StatefulWidget {
   _LoginState createState() => _LoginState();
 }
 
+
+
 class _LoginState extends State<Login> {
   final _formkey = GlobalKey<FormState>();
-  final _usernameValueController = TextEditingController();
+  final _empidValueController = TextEditingController();
   final _passwordValueController = TextEditingController();
+
+Future <(bool,String,String)> _authenRequest() async{
+  String empid = _empidValueController.text;
+  DateTime now = DateTime.now();
+  String formattedDateString = DateUtil().getFormattedDate (now);
+
+  String comdinedSring = "$empid&$formattedDateString";
+  print(comdinedSring);
+
+  String _authenRequestStrig = sha256
+  .convert(utf8.encode(comdinedSring)).
+  toString();
+
+  print(_authenRequestStrig);
+
+  final response = await http.post(
+    Uri.parse("${AppConfig.apiBaseUri}/authen/authen_request"),
+    headers:<String, String>{
+      'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{'authen_request': _authenRequestStrig}),
+  );
+
+  final json =jsonDecode(response.body);
+
+  print(json);
+
+  return(
+    json["isError"]as bool,
+    json["data"] as String,
+    json["errorMessage"] as String,
+  );
+}
+
+
+
+ Future<({bool isError, String data, String errorMessage})> _accessRequest(
+    String authenToken,
+  ) async {
+      String empid = _empidValueController.text;
+      String password = _passwordValueController.text;
+      String passwordEncode = sha256.convert(utf8.encode(password)).toString();
+      String combinedString = "$empid&$passwordEncode&$authenToken";
+      String authenSignature = sha256.convert(utf8.encode(combinedString)).toString();
+
+      final response = await http.post(
+        Uri.parse("${AppConfig.apiBaseUri}/authen/access_request"),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, String>{
+          'authen_signatrue': authenSignature,
+          'authen_token': authenToken,
+        }),
+      );
+
+      final json = jsonDecode(response.body);
+      print("Access Request Response: $json");
+
+       if (!json["isError"]) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+
+        await prefs.setString('token', json["data"]["access_token"]);
+        await prefs.setString('empid', _empidValueController.text);
+      }
+      return (
+        isError: json["isError"] as bool,
+        data: json["data"]["access_token"] as String,
+        errorMessage: json["errorMessage"] as String,
+      );
+     
+  }
+
+void _doLogin(BuildContext context) async {
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator(color: Colors.amber)),
+    );
+
+   
+    var (isError, authenToken, errorMessage) = await _authenRequest();
+
+    if (isError) {
+      Navigator.pop(context); 
+      _showErrorDialog(context, errorMessage);
+    } else {
+      
+      var (:isError, :data, :errorMessage) = await _accessRequest(authenToken);
+      Navigator.pop(context); 
+
+      if (isError) {
+        _showErrorDialog(context, errorMessage);
+      } else {
+        
+        Map<String, dynamic> decodedToken = JwtDecoder.decode(data);
+        int roleId = decodedToken['emp_role_id'] ?? 1;
+
+        
+        Widget targetPage;
+        if (roleId == 2) {
+          targetPage = const Scaffold(body: Center(child: Text(".............."))); 
+        } else {
+          targetPage = const Scaffold(body: Center(child: Text("................")));
+        }
+
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => targetPage),
+          );
+        }
+      }
+    }
+  }
+
+  void _showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("เข้าสู่ระบบไม่สำเร็จ"),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("ตกลง"),
+            )
+          ],
+        );
+      },
+    );
+  }
 
   // It's good practice to dispose of controllers to prevent memory leaks
   @override
   void dispose() {
-    _usernameValueController.dispose();
+    _empidValueController.dispose();
     _passwordValueController.dispose();
     super.dispose();
   }
@@ -71,7 +216,7 @@ class _LoginState extends State<Login> {
                         margin: const EdgeInsets.only(top: 50),
                         padding: const EdgeInsets.symmetric(horizontal: 30),
                         child: TextFormField(
-                          controller: _usernameValueController,
+                          controller: _empidValueController,
                           style: const TextStyle(
                             color: Color.fromARGB(255, 0, 0, 0),
                           ),
@@ -173,7 +318,7 @@ class _LoginState extends State<Login> {
                           ),
                           onPressed: () {
                             if (_formkey.currentState!.validate()) {
-                              // จัดการต่อเมื่อกดปุ่มสำเร็จ
+                              _doLogin(context);
                             }
                           },
                           child: const Text(
