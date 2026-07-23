@@ -17,126 +17,156 @@ class Login extends StatefulWidget {
   _LoginState createState() => _LoginState();
 }
 
-
-
 class _LoginState extends State<Login> {
   final _formkey = GlobalKey<FormState>();
-  final _empidValueController = TextEditingController();
+  final _useridValueController = TextEditingController();
   final _passwordValueController = TextEditingController();
 
-Future <(bool,String,String)> _authenRequest() async{
-  String empid = _empidValueController.text;
-  DateTime now = DateTime.now();
-  String formattedDateString = DateUtil().getFormattedDate (now);
+  Future<(bool, String, String)> _authenRequest() async {
+    String empid = _useridValueController.text;
+    DateTime now = DateTime.now();
+    String formattedDateString = DateUtil().getFormattedDate(now);
 
-  String comdinedSring = "$empid&$formattedDateString";
-  print(comdinedSring);
+    String comdinedSring = "$empid&$formattedDateString";
+    print(comdinedSring);
 
-  String _authenRequestStrig = sha256
-  .convert(utf8.encode(comdinedSring)).
-  toString();
+    String _authenRequestStrig = sha256
+        .convert(utf8.encode(comdinedSring))
+        .toString();
 
-  print(_authenRequestStrig);
+    print(_authenRequestStrig);
 
-  final response = await http.post(
-    Uri.parse("${AppConfig.apiBaseUri}/authen/authen_request"),
-    headers:<String, String>{
-      'Content-Type': 'application/json; charset=UTF-8',
+    final response = await http.post(
+      Uri.parse("${AppConfig.apiBaseUri}/authen/authen_request"),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
       },
       body: jsonEncode(<String, String>{'authen_request': _authenRequestStrig}),
-  );
+    );
 
-  final json =jsonDecode(response.body);
-
+    final json = jsonDecode(response.body);
   print(json);
 
-  return(
-    json["isError"]as bool,
-    json["data"] as String,
-    json["errorMessage"] as String,
-  );
-}
-
-
-
- Future<({bool isError, String data, String errorMessage})> _accessRequest(
-    String authenToken,
-  ) async {
-      String empid = _empidValueController.text;
-      String password = _passwordValueController.text;
-      String passwordEncode = sha256.convert(utf8.encode(password)).toString();
-      String combinedString = "$empid&$passwordEncode&$authenToken";
-      String authenSignature = sha256.convert(utf8.encode(combinedString)).toString();
-
-      final response = await http.post(
-        Uri.parse("${AppConfig.apiBaseUri}/authen/access_request"),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(<String, String>{
-          'authen_signatrue': authenSignature,
-          'authen_token': authenToken,
-        }),
-      );
-
-      final json = jsonDecode(response.body);
-      print("Access Request Response: $json");
-
-       if (!json["isError"]) {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-
-        await prefs.setString('token', json["data"]["access_token"]);
-        await prefs.setString('empid', _empidValueController.text);
-      }
-      return (
-        isError: json["isError"] as bool,
-        data: json["data"]["access_token"] as String,
-        errorMessage: json["errorMessage"] as String,
-      );
-     
+  
+  bool isError = json["isError"] is bool ? json["isError"] as bool : true;
+  String data = json["data"] is String ? json["data"] as String : "";
+  
+  
+  String errorMessage = "";
+  if (json["errorMessage"] != null) {
+    errorMessage = json["errorMessage"] as String;
+  } else if (json["errorMassage"] != null) {
+    errorMessage = json["errorMassage"] as String;
+  } else {
+    errorMessage = "เกิดข้อผิดพลาดในการยืนยันตัวตน";
   }
 
-void _doLogin(BuildContext context) async {
+  return (isError, data, errorMessage);
+}
+
+  Future<({bool isError, String data, String errorMessage})> _accessRequest(
+    String authenToken,
+  ) async {
+  String empid = _useridValueController.text;
+    String password = _passwordValueController.text;
     
+    
+    String passwordEncode = sha256.convert(utf8.encode(password)).toString();
+    
+    
+    String combinedString = "$empid&$passwordEncode&$authenToken";
+    String authenSignature = sha256.convert(utf8.encode(combinedString)).toString();
+
+    final response = await http.post(
+      Uri.parse("${AppConfig.apiBaseUri}/authen/access_request"),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        'authen_signature': authenSignature, 
+        'authen_token': authenToken,
+      }),
+    );
+
+    final json = jsonDecode(response.body);
+    print("Access Request Response: $json");
+
+    if (!json["isError"]) {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('token', json["data"]["access_token"]);
+      await prefs.setString('user_id', _useridValueController.text);
+
+      return (
+        isError: false,
+        data: json["data"]["access_token"] as String,
+        errorMessage: "",
+      );
+    }
+
+    
+    return (
+      isError: true,
+      data: "",
+      errorMessage: json["errorMessage"] is String
+          ? json["errorMessage"] as String
+          : "รหัสผ่านไม่ถูกต้อง",
+    );
+  }
+
+  void _doLogin(BuildContext context) async {
+    
+    BuildContext? dialogContext;
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator(color: Colors.amber)),
+      builder: (ctx) {
+        dialogContext = ctx; 
+        return const Center(
+          child: CircularProgressIndicator(color: Colors.amber),
+        );
+      },
     );
 
-   
-    var (isError, authenToken, errorMessage) = await _authenRequest();
+    
+    var (isError1, authenToken, errorMessage1) = await _authenRequest();
 
-    if (isError) {
-      Navigator.pop(context); 
-      _showErrorDialog(context, errorMessage);
+    if (isError1) {
+      
+      if (dialogContext != null && Navigator.canPop(dialogContext!)) {
+        Navigator.pop(dialogContext!);
+      }
+      if (mounted) _showErrorDialog(context, errorMessage1);
+      return;
+    }
+
+    
+    var result = await _accessRequest(authenToken);
+
+    
+    if (dialogContext != null && Navigator.canPop(dialogContext!)) {
+      Navigator.pop(dialogContext!);
+    }
+
+    
+    if (!mounted) return;
+
+    if (result.isError) {
+      
+      _showErrorDialog(context, result.errorMessage);
     } else {
       
-      var (:isError, :data, :errorMessage) = await _accessRequest(authenToken);
-      Navigator.pop(context); 
+      Map<String, dynamic> decodedToken = JwtDecoder.decode(result.data);
+      int roleId = decodedToken['emp_role_id'] ?? 1;
 
-      if (isError) {
-        _showErrorDialog(context, errorMessage);
-      } else {
-        
-        Map<String, dynamic> decodedToken = JwtDecoder.decode(data);
-        int roleId = decodedToken['emp_role_id'] ?? 1;
+      Widget targetPage = (roleId == 2)
+          ? const OrderScreen()
+          : const Scaffold(body: Center(child: Text("ผู้จัดการ")));
 
-        
-        Widget targetPage;
-        if (roleId == 2) {
-          targetPage = const Scaffold(body: Center(child: Text(".............."))); 
-        } else {
-          targetPage = const Scaffold(body: Center(child: Text("................")));
-        }
-
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => targetPage),
-          );
-        }
-      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => targetPage),
+      );
     }
   }
 
@@ -151,17 +181,17 @@ void _doLogin(BuildContext context) async {
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text("ตกลง"),
-            )
+            ),
           ],
         );
       },
     );
   }
 
-  // It's good practice to dispose of controllers to prevent memory leaks
+  
   @override
   void dispose() {
-    _empidValueController.dispose();
+    _useridValueController.dispose();
     _passwordValueController.dispose();
     super.dispose();
   }
@@ -216,7 +246,7 @@ void _doLogin(BuildContext context) async {
                         margin: const EdgeInsets.only(top: 50),
                         padding: const EdgeInsets.symmetric(horizontal: 30),
                         child: TextFormField(
-                          controller: _empidValueController,
+                          controller: _useridValueController,
                           style: const TextStyle(
                             color: Color.fromARGB(255, 0, 0, 0),
                           ),
@@ -294,27 +324,17 @@ void _doLogin(BuildContext context) async {
                       ),
                       Container(
                         margin: const EdgeInsets.only(top: 30),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 30,
-                        ), 
-                        width: double
-                            .infinity, 
+                        padding: const EdgeInsets.symmetric(horizontal: 30),
+                        width: double.infinity,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            foregroundColor:
-                                Colors.white, 
-                            backgroundColor: const Color(
-                              0xFF1A1A1A,
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 15,
-                            ), 
+                            foregroundColor: Colors.white,
+                            backgroundColor: const Color(0xFF1A1A1A),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                15,
-                              ), 
+                              borderRadius: BorderRadius.circular(15),
                             ),
-                            elevation: 2, 
+                            elevation: 2,
                           ),
                           onPressed: () {
                             if (_formkey.currentState!.validate()) {
@@ -326,8 +346,7 @@ void _doLogin(BuildContext context) async {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              letterSpacing:
-                                  2, 
+                              letterSpacing: 2,
                             ),
                           ),
                         ),

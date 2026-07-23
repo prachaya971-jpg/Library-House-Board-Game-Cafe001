@@ -4,8 +4,8 @@ import 'menu_item_model.dart';
 import 'employeemoule/orders.dart';
 
 class AppSidebar extends StatelessWidget {
-  final int currentRoleId; // ค่าตัวเลขสิทธิ์พนักงานที่ส่งมาจาก Backend (แกะจาก JWT)
-  final String currentRouteName; // ชื่อหน้าปัจจุบันเพื่อแสดงไฮไลท์สีส้ม
+  final int currentRoleId; 
+  final String currentRouteName; 
 
   const AppSidebar({
     Key? key,
@@ -58,7 +58,7 @@ class AppSidebar extends StatelessWidget {
       color: Colors.white,
       child: Column(
         children: [
-          // ส่วนหัวโลโก้ร้านบอร์ดเกม
+          
           Container(
             padding: const EdgeInsets.symmetric(vertical: 30),
             alignment: Alignment.center,
@@ -139,13 +139,13 @@ class AppSidebar extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE53935), // สีแดงปุ่มล็อกเอาท์
+                  backgroundColor: const Color(0xFFE53935), 
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onPressed: () async {
                   final prefs = await SharedPreferences.getInstance();
-                  await prefs.remove('token'); // ลบตั๋วออกจากเครื่อง
+                  await prefs.remove('token'); 
                  
                 },
                 child: const Text("ออกจากระบบ", style: TextStyle(color: Colors.white, fontSize: 16)),
