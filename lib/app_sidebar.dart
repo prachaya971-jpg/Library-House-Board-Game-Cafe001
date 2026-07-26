@@ -1,7 +1,9 @@
+import 'package:cafa_boardgame/home.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'menu_item_model.dart';
-import 'employeemoule/orders.dart';
+//import 'employeemoule/orders.dart';
+
 
 class AppSidebar extends StatelessWidget {
   final int currentRoleId; 
@@ -18,8 +20,8 @@ class AppSidebar extends StatelessWidget {
     
     final List<SidebarMenuItem> allMenus = [
       SidebarMenuItem(
-        title: "ออเดอร์",
-        targetScreen: const OrderScreen(), 
+        title: "หน้าเเรก",
+        targetScreen: const Home(), 
         allowedRoles: [1, 2], 
       ),
       SidebarMenuItem(

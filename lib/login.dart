@@ -7,8 +7,9 @@ import 'package:cafa_boardgame/utils/date_util.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
-import 'employeemoule/orders.dart';
+//import 'employeemoule/orders.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:cafa_boardgame/home.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -160,8 +161,8 @@ class _LoginState extends State<Login> {
       int roleId = decodedToken['emp_role_id'] ?? 1;
 
       Widget targetPage = (roleId == 2)
-          ? const OrderScreen()
-          : const Scaffold(body: Center(child: Text("ผู้จัดการ")));
+          ? const Home()
+          : const Home();
 
       Navigator.pushReplacement(
         context,
