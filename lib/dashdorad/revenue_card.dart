@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cafa_boardgame/config/app_config.dart'; // ปรับ path ตามโปรเจกต์คุณ
+import 'package:cafa_boardgame/config/app_config.dart';
+import 'package:intl/intl.dart';
 
 class RevenueCard extends StatefulWidget {
   const RevenueCard({super.key});
@@ -12,8 +13,8 @@ class RevenueCard extends StatefulWidget {
 }
 
 class _RevenueCardState extends State<RevenueCard> {
-  String _selectedPeriod = 'daily';     // 'daily', 'monthly', 'yearly'
-  String _selectedCategory = 'food';    // 'all', 'food', 'boardgame'
+  String _selectedPeriod = 'daily'; // 'daily', 'monthly', 'yearly'
+  String _selectedCategory = 'food'; // 'all', 'food', 'boardgame'
 
   num _totalRevenue = 0;
   bool _isLoading = false;
@@ -25,48 +26,48 @@ class _RevenueCardState extends State<RevenueCard> {
   }
 
   Future<void> _fetchRevenue() async {
-  setState(() => _isLoading = true);
+    setState(() => _isLoading = true);
 
-  try {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? token = prefs.getString('token');
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? token = prefs.getString('token');
 
-    final uri = Uri.parse('${AppConfig.apiBaseUri}/reports/revenue').replace(
-      queryParameters: {
-        'period': _selectedPeriod,
-        'category': _selectedCategory,
-      },
-    );
+      final uri = Uri.parse('${AppConfig.apiBaseUri}/reports/revenue').replace(
+        queryParameters: {
+          'period': _selectedPeriod,
+          'category': _selectedCategory,
+        },
+      );
 
-    final response = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json; charset=UTF-8',
-        'Authorization': 'Bearer $token',
-      },
-    );
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token',
+        },
+      );
 
-    final json = jsonDecode(response.body);
+      final json = jsonDecode(response.body);
 
-    if (!json['isError']) {
-      setState(() {
-        // 🟢 แปลงค่าไม่ว่าจะส่งมาเป็น String, int หรือ double ให้เป็น num อย่างปลอดภัย
-        var rawRevenue = json['data']['total_revenue'];
-        if (rawRevenue is String) {
-          _totalRevenue = num.tryParse(rawRevenue) ?? 0;
-        } else if (rawRevenue is num) {
-          _totalRevenue = rawRevenue;
-        } else {
-          _totalRevenue = 0;
-        }
-      });
+      if (!json['isError']) {
+        setState(() {
+          var rawRevenue = json['data']['total_revenue'];
+          // ใช้ double.tryParse หรือ .toDouble() เพื่อรองรับทศนิยมชัวร์ๆ
+          if (rawRevenue is num) {
+            _totalRevenue = rawRevenue;
+          } else if (rawRevenue is String) {
+            _totalRevenue = double.tryParse(rawRevenue) ?? 0;
+          } else {
+            _totalRevenue = 0;
+          }
+        });
+      }
+    } catch (e) {
+      print("Error fetching revenue: $e");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-  } catch (e) {
-    print("Error fetching revenue: $e");
-  } finally {
-    if (mounted) setState(() => _isLoading = false);
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +145,7 @@ class _RevenueCardState extends State<RevenueCard> {
                     child: CircularProgressIndicator(color: Color(0xFF6E8B7E)),
                   )
                 : Text(
-                    "$_totalRevenue",
+                    NumberFormat('#,##0.00').format(_totalRevenue),
                     style: const TextStyle(
                       fontSize: 42,
                       fontWeight: FontWeight.bold,
