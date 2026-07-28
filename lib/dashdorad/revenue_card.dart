@@ -47,20 +47,23 @@ class _RevenueCardState extends State<RevenueCard> {
         },
       );
 
-      final json = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
 
-      if (!json['isError']) {
-        setState(() {
-          var rawRevenue = json['data']['total_revenue'];
-          // ใช้ double.tryParse หรือ .toDouble() เพื่อรองรับทศนิยมชัวร์ๆ
-          if (rawRevenue is num) {
-            _totalRevenue = rawRevenue;
-          } else if (rawRevenue is String) {
-            _totalRevenue = double.tryParse(rawRevenue) ?? 0;
-          } else {
-            _totalRevenue = 0;
-          }
-        });
+        if (!json['isError']) {
+          setState(() {
+            var rawRevenue = json['data']['total_revenue'];
+            if (rawRevenue is num) {
+              _totalRevenue = rawRevenue;
+            } else if (rawRevenue is String) {
+              _totalRevenue = double.tryParse(rawRevenue) ?? 0;
+            } else {
+              _totalRevenue = 0;
+            }
+          });
+        }
+      } else {
+        print("Server Error: ${response.statusCode}");
       }
     } catch (e) {
       print("Error fetching revenue: $e");
