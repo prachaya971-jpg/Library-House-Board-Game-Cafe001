@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:cafa_boardgame/config/app_config.dart';
+import 'package:cafa_boardgame/utils/appapi.dart';
 
 class RevenueBarChartCard extends StatefulWidget {
   const RevenueBarChartCard({super.key});
@@ -26,43 +24,31 @@ class _RevenueBarChartCardState extends State<RevenueBarChartCard> {
   }
 
   Future<void> _fetchChartData() async {
-    setState(() => _isLoading = true);
+  setState(() => _isLoading = true);
 
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? token = prefs.getString('token');
+  try {
+  
+    final queryString = '/reports/revenue-chart?period=$_selectedPeriod&category=$_selectedCategory';
 
-      final uri = Uri.parse('${AppConfig.apiBaseUri}/reports/revenue-chart').replace(
-        queryParameters: {
-          'period': _selectedPeriod,
-          'category': _selectedCategory,
-        },
-      );
+    
+    final response = await AppAPI.get(queryString);
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        if (!json['isError']) {
-          setState(() {
-            _chartData = json['data'];
-          });
-        }
-      } else {
-        print("Server Error: ${response.statusCode} - ${response.body}");
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      if (!json['isError']) {
+        setState(() {
+          _chartData = json['data'];
+        });
       }
-    } catch (e) {
-      print("Error fetching chart data: $e");
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    } else {
+      print("Server Error: ${response.statusCode} - ${response.body}");
     }
+  } catch (e) {
+    print("Error fetching chart data: $e");
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
+}
 
   @override
   Widget build(BuildContext context) {

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cafa_boardgame/config/app_config.dart';
+import 'package:cafa_boardgame/utils/appapi.dart';
 
 class BorrowCountCard extends StatefulWidget {
   const BorrowCountCard({super.key});
@@ -22,42 +20,32 @@ class _BorrowCountCardState extends State<BorrowCountCard> {
   }
 
   Future<void> _fetchBorrowCount() async {
-    setState(() => _isLoading = true);
+  setState(() => _isLoading = true);
 
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? token = prefs.getString('token');
+  try {
+    // 🟢 ใช้ AppAPI.get ยิงไปยัง endpoint ได้สั้นๆ บรรทัดเดียว
+    final response = await AppAPI.get('/reports/borrow-count');
 
-      final uri = Uri.parse('${AppConfig.apiBaseUri}/reports/borrow-count');
+    final json = jsonDecode(response.body);
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      final json = jsonDecode(response.body);
-
-      if (!json['isError']) {
-        setState(() {
-          var rawCount = json['data']['total_borrows'];
-          if (rawCount is int) {
-            _borrowCount = rawCount;
-          } else if (rawCount is String) {
-            _borrowCount = int.tryParse(rawCount) ?? 0;
-          } else {
-            _borrowCount = 0;
-          }
-        });
-      }
-    } catch (e) {
-      print("Error fetching borrow count: $e");
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    if (!json['isError']) {
+      setState(() {
+        var rawCount = json['data']['total_borrows'];
+        if (rawCount is int) {
+          _borrowCount = rawCount;
+        } else if (rawCount is String) {
+          _borrowCount = int.tryParse(rawCount) ?? 0;
+        } else {
+          _borrowCount = 0;
+        }
+      });
     }
+  } catch (e) {
+    print("Error fetching borrow count: $e");
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
+}
 
   @override
   Widget build(BuildContext context) {

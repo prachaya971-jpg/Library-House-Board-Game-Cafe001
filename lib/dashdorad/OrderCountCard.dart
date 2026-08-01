@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cafa_boardgame/config/app_config.dart';
+import 'package:cafa_boardgame/utils/appapi.dart';
 
 class OrderCountCard extends StatefulWidget {
   const OrderCountCard({super.key});
@@ -22,43 +20,31 @@ class _OrderCountCardState extends State<OrderCountCard> {
   }
 
   Future<void> _fetchOrderCount() async {
-    setState(() => _isLoading = true);
+  setState(() => _isLoading = true);
 
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? token = prefs.getString('token');
+  try {
+    final response = await AppAPI.get('/reports/order-count');
 
-      final uri = Uri.parse('${AppConfig.apiBaseUri}/reports/order-count');
+    final json = jsonDecode(response.body);
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      final json = jsonDecode(response.body);
-
-      if (!json['isError']) {
-        setState(() {
-          var rawCount = json['data']['total_orders'];
-          if (rawCount is int) {
-            _orderCount = rawCount;
-          } else if (rawCount is String) {
-            _orderCount = int.tryParse(rawCount) ?? 0;
-          } else {
-            _orderCount = 0;
-          }
-        });
-      }
-    } catch (e) {
-      print("Error fetching order count: $e");
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    if (!json['isError']) {
+      setState(() {
+        var rawCount = json['data']['total_orders'];
+        if (rawCount is int) {
+          _orderCount = rawCount;
+        } else if (rawCount is String) {
+          _orderCount = int.tryParse(rawCount) ?? 0;
+        } else {
+          _orderCount = 0;
+        }
+      });
     }
+  } catch (e) {
+    print("Error fetching order count: $e");
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
-
+}
   @override
   Widget build(BuildContext context) {
     return Container(

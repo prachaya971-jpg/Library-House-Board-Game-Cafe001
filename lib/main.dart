@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'login.dart';
+import 'package:cafa_boardgame/order/orders.dart';
+import 'package:cafa_boardgame/home.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,7 +15,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
+      title: 'Liberty Board Game Cafe',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -31,8 +33,14 @@ class MyApp extends StatelessWidget {
         // This works for code too, not just values: Most code changes can be
         // tested with just a hot reload.
         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+
       ),
-       home: const Login(),
+      initialRoute: '/login',
+       routes: {
+        '/login': (context) => const Login(),
+        '/home': (context) => const Home(),
+        '/order': (context) => const OrderScreen(),
+      },
     );
   }
 }

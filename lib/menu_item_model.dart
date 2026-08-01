@@ -1,8 +1,6 @@
-import 'package:flutter/material.dart';
-
 class SidebarMenuItem {
   final String title;
-  final Widget targetScreen; 
+  final String targetScreen;
   final List<int> allowedRoles; 
   final int badgeCount; 
 

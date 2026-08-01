@@ -115,61 +115,43 @@ class _LoginState extends State<Login> {
   }
 
   void _doLogin(BuildContext context) async {
-    
-    BuildContext? dialogContext;
+  BuildContext? dialogContext;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        dialogContext = ctx; 
-        return const Center(
-          child: CircularProgressIndicator(color: Colors.amber),
-        );
-      },
-    );
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) {
+      dialogContext = ctx; 
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.amber),
+      );
+    },
+  );
 
-    
-    var (isError1, authenToken, errorMessage1) = await _authenRequest();
+  var (isError1, authenToken, errorMessage1) = await _authenRequest();
 
-    if (isError1) {
-      
-      if (dialogContext != null && Navigator.canPop(dialogContext!)) {
-        Navigator.pop(dialogContext!);
-      }
-      if (mounted) _showErrorDialog(context, errorMessage1);
-      return;
-    }
-
-    
-    var result = await _accessRequest(authenToken);
-
-    
+  if (isError1) {
     if (dialogContext != null && Navigator.canPop(dialogContext!)) {
       Navigator.pop(dialogContext!);
     }
-
-    
-    if (!mounted) return;
-
-    if (result.isError) {
-      
-      _showErrorDialog(context, result.errorMessage);
-    } else {
-      
-      Map<String, dynamic> decodedToken = JwtDecoder.decode(result.data);
-      int roleId = decodedToken['emp_role_id'] ?? 1;
-
-      Widget targetPage = (roleId == 2)
-          ? const Home()
-          : const Home();
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => targetPage),
-      );
-    }
+    if (mounted) _showErrorDialog(context, errorMessage1);
+    return;
   }
+
+  var result = await _accessRequest(authenToken);
+
+  if (dialogContext != null && Navigator.canPop(dialogContext!)) {
+    Navigator.pop(dialogContext!);
+  }
+
+  if (!mounted) return;
+
+  if (result.isError) {
+    _showErrorDialog(context, result.errorMessage);
+  } else {
+    Navigator.pushReplacementNamed(context, '/home');
+  }
+}
 
   void _showErrorDialog(BuildContext context, String message) {
     showDialog(

@@ -1,13 +1,15 @@
 import 'package:cafa_boardgame/home.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cafa_boardgame/config/app_config.dart';
 import 'menu_item_model.dart';
-//import 'employeemoule/orders.dart';
+import 'package:cafa_boardgame/order/orders.dart';
 
-
-class AppSidebar extends StatelessWidget {
-  final int currentRoleId; 
-  final String currentRouteName; 
+class AppSidebar extends StatefulWidget {
+  final int currentRoleId;
+  final String currentRouteName;
 
   const AppSidebar({
     Key? key,
@@ -16,51 +18,80 @@ class AppSidebar extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<AppSidebar> createState() => _AppSidebarState();
+}
+
+class _AppSidebarState extends State<AppSidebar> {
+  int _orderCount = 0;
+  @override
+  void initState() {
+    super.initState();
+    _fetchOrderCount();
+  }
+
+  Future<void> _fetchOrderCount() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? token = prefs.getString('token');
+
+      final uri = Uri.parse('${AppConfig.apiBaseUri}/reports/order-count');
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+
+        if (!json['isError']) {
+          if (mounted) {
+            setState(() {
+              var rawCount = json['data']['total_orders'];
+              if (rawCount is int) {
+                _orderCount = rawCount;
+              } else if (rawCount is String) {
+                _orderCount = int.tryParse(rawCount) ?? 0;
+              } else {
+                _orderCount = 0;
+              }
+            });
+          }
+        }
+      }
+    } catch (e) {
+      print("Error fetching order count in sidebar: $e");
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    
     final List<SidebarMenuItem> allMenus = [
       SidebarMenuItem(
         title: "หน้าเเรก",
-        targetScreen: const Home(), 
-        allowedRoles: [1, 2], 
-      ),
-      SidebarMenuItem(
-        title: "รายการการส่งคำขอคำปรึกษา",
-        targetScreen: const Scaffold(body: Center(child: Text("หน้าขอคำปรึกษา"))),
-        allowedRoles: [1, 2],
-        badgeCount: 1, 
-      ),
-      SidebarMenuItem(
-        title: "ดูรายการการขาย",
-        targetScreen: const Scaffold(body: Center(child: Text("หน้ายอดขายสำหรับผู้จัดการ"))),
-        allowedRoles: [2],
-      ),
-      SidebarMenuItem(
-        title: "อัปเดตสถานะวัตถุดิบ",
-        targetScreen: const Scaffold(body: Center(child: Text("หน้าวัตถุดิบ"))),
+        targetScreen: '/home',
         allowedRoles: [1, 2],
       ),
       SidebarMenuItem(
-        title: "รายการการยืมและคืนบอร์ดเกม",
-        targetScreen: const Scaffold(body: Center(child: Text("หน้ายืมคืนบอร์ดเกม"))),
+        title: "ออเดอร์",
+        targetScreen: '/order',
         allowedRoles: [1, 2],
-      ),
-      SidebarMenuItem(
-        title: "ขายบอร์ดเกม",
-        targetScreen: const Scaffold(body: Center(child: Text("หน้าขายบอร์ดเกม"))),
-        allowedRoles: [1, 2],
+        badgeCount: _orderCount,
       ),
     ];
 
-    
-    final visibleMenus = allMenus.where((menu) => menu.allowedRoles.contains(currentRoleId)).toList();
+    final visibleMenus = allMenus
+        .where((menu) => menu.allowedRoles.contains(widget.currentRoleId))
+        .toList();
 
     return Container(
       width: 260,
       color: Colors.white,
       child: Column(
         children: [
-          
           Container(
             padding: const EdgeInsets.symmetric(vertical: 30),
             alignment: Alignment.center,
@@ -73,31 +104,37 @@ class AppSidebar extends StatelessWidget {
               ),
             ),
           ),
-          
-          
+
+          // รายการเมนู
           Expanded(
             child: ListView.builder(
               itemCount: visibleMenus.length,
               itemBuilder: (context, index) {
                 final item = visibleMenus[index];
-                final bool isActive = currentRouteName == item.title;
+                final bool isActive =
+                    widget.currentRouteName.trim() == item.title.trim();
 
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
                     onTap: () {
                       if (!isActive) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => item.targetScreen),
-                        );
+                        Navigator.pushReplacementNamed(context, item.targetScreen);
                       }
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
                       decoration: BoxDecoration(
-                        
-                        color: isActive ? const Color(0xFFD49A32) : Colors.transparent,
+                        color: isActive
+                            ? const Color(0xFFD49A32)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -109,10 +146,13 @@ class AppSidebar extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 16,
                                 color: isActive ? Colors.white : Colors.black87,
-                                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                                fontWeight: isActive
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
                               ),
                             ),
                           ),
+                          // แสดง Badge สีแดงถ้ามีจำนวนออร์เดอร์มากกว่า 0
                           if (item.badgeCount > 0)
                             Container(
                               padding: const EdgeInsets.all(6),
@@ -122,9 +162,12 @@ class AppSidebar extends StatelessWidget {
                               ),
                               child: Text(
                                 "${item.badgeCount}",
-                                style: const TextStyle(color: Colors.white, fontSize: 11),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                ),
                               ),
-                            )
+                            ),
                         ],
                       ),
                     ),
@@ -134,26 +177,31 @@ class AppSidebar extends StatelessWidget {
             ),
           ),
 
-          
+          // ปุ่มออกจากระบบ
           Padding(
             padding: const EdgeInsets.only(bottom: 30, left: 16, right: 16),
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE53935), 
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  backgroundColor: const Color(0xFFE53935),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onPressed: () async {
                   final prefs = await SharedPreferences.getInstance();
-                  await prefs.remove('token'); 
-                 
+                  await prefs.remove('token');
+                  // TODO: นำทางกลับไปยังหน้า Login
                 },
-                child: const Text("ออกจากระบบ", style: TextStyle(color: Colors.white, fontSize: 16)),
+                child: const Text(
+                  "ออกจากระบบ",
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
               ),
             ),
-          )
+          ),
         ],
       ),
     );

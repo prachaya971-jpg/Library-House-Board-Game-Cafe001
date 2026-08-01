@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cafa_boardgame/config/app_config.dart';
 import 'package:intl/intl.dart';
+import 'package:cafa_boardgame/utils/appapi.dart';
 
 class RevenueCard extends StatefulWidget {
   const RevenueCard({super.key});
@@ -26,51 +24,36 @@ class _RevenueCardState extends State<RevenueCard> {
   }
 
   Future<void> _fetchRevenue() async {
-    setState(() => _isLoading = true);
+  setState(() => _isLoading = true);
 
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? token = prefs.getString('token');
+  try {
+    final queryString = '/reports/revenue?period=$_selectedPeriod&category=$_selectedCategory';
+    final response = await AppAPI.get(queryString);
 
-      final uri = Uri.parse('${AppConfig.apiBaseUri}/reports/revenue').replace(
-        queryParameters: {
-          'period': _selectedPeriod,
-          'category': _selectedCategory,
-        },
-      );
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-
-        if (!json['isError']) {
-          setState(() {
-            var rawRevenue = json['data']['total_revenue'];
-            if (rawRevenue is num) {
-              _totalRevenue = rawRevenue;
-            } else if (rawRevenue is String) {
-              _totalRevenue = double.tryParse(rawRevenue) ?? 0;
-            } else {
-              _totalRevenue = 0;
-            }
-          });
-        }
-      } else {
-        print("Server Error: ${response.statusCode}");
+      if (!json['isError']) {
+        setState(() {
+          var rawRevenue = json['data']['total_revenue'];
+          if (rawRevenue is num) {
+            _totalRevenue = rawRevenue;
+          } else if (rawRevenue is String) {
+            _totalRevenue = double.tryParse(rawRevenue) ?? 0;
+          } else {
+            _totalRevenue = 0;
+          }
+        });
       }
-    } catch (e) {
-      print("Error fetching revenue: $e");
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    } else {
+      print("Server Error: ${response.statusCode}");
     }
+  } catch (e) {
+    print("Error fetching revenue: $e");
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
+}
 
   @override
   Widget build(BuildContext context) {

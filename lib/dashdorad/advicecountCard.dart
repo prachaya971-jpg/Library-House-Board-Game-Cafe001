@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cafa_boardgame/config/app_config.dart';
+import 'package:cafa_boardgame/utils/appapi.dart';
 
 class AdviceCountCard extends StatefulWidget {
   const AdviceCountCard({super.key});
@@ -22,42 +20,31 @@ class _AdviceCountCardState extends State<AdviceCountCard> {
   }
 
   Future<void> _fetchAdviceCount() async {
-    setState(() => _isLoading = true);
+  setState(() => _isLoading = true);
 
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? token = prefs.getString('token');
+  try {
+    final response = await AppAPI.get('/reports/advice-count');
 
-      final uri = Uri.parse('${AppConfig.apiBaseUri}/reports/advice-count');
+    final json = jsonDecode(response.body);
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      final json = jsonDecode(response.body);
-
-      if (!json['isError']) {
-        setState(() {
-          var rawCount = json['data']['total_advice'];
-          if (rawCount is int) {
-            _adviceCount = rawCount;
-          } else if (rawCount is String) {
-            _adviceCount = int.tryParse(rawCount) ?? 0;
-          } else {
-            _adviceCount = 0;
-          }
-        });
-      }
-    } catch (e) {
-      print("Error fetching advice count: $e");
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    if (!json['isError']) {
+      setState(() {
+        var rawCount = json['data']['total_advice'];
+        if (rawCount is int) {
+          _adviceCount = rawCount;
+        } else if (rawCount is String) {
+          _adviceCount = int.tryParse(rawCount) ?? 0;
+        } else {
+          _adviceCount = 0;
+        }
+      });
     }
+  } catch (e) {
+    print("Error fetching advice count: $e");
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
+}
 
   @override
   Widget build(BuildContext context) {
