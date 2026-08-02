@@ -7,7 +7,7 @@ import 'package:cafa_boardgame/dashdorad/OrderCountCard.dart';
 import 'package:cafa_boardgame/dashdorad/adviceCountCard.dart';
 import 'package:cafa_boardgame/dashdorad/borrowcountCard.dart';
 import 'package:cafa_boardgame/dashdorad/RevenueBarChart.dart';
-
+import 'package:cafa_boardgame/dashdorad/listtopproduct.dart';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -39,49 +39,52 @@ class _HomeState extends State<Home> {
   }
 
   @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    
-    resizeToAvoidBottomInset: false, 
-    body: Row(
-      crossAxisAlignment: CrossAxisAlignment.start, 
-      children: [
-        AppSidebar(currentRoleId: roleId, currentRouteName: "หน้าเเรก"),
+  Widget build(BuildContext context) {
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppSidebar(currentRoleId: roleId, currentRouteName: "หน้าเเรก"),
 
-        Expanded(
-          child: Container(
-            color: const Color(0xFFF8F9FA),
-            child: SingleChildScrollView(
-              
-              padding: const EdgeInsets.all(24.0), 
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start, 
-                mainAxisAlignment: MainAxisAlignment.start, 
-                children: const [
-                  // Row ส่วนการ์ดสรุป 4 ใบ
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      RevenueCard(),
-                      OrderCountCard(),
-                      AdviceCountCard(),
-                      BorrowCountCard(),
-                    ],
-                  ),
+          Expanded(
+            child: Container(
+              color: const Color(0xFFF8F9FA),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: const [
+                
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Expanded(child: RevenueCard()),
+                        SizedBox(width: 16), 
+                        Expanded(child: OrderCountCard()),
+                        SizedBox(width: 16),
+                        Expanded(child: AdviceCountCard()),
+                        SizedBox(width: 16),
+                        Expanded(child: BorrowCountCard()),
+                      ],
+                    ),
 
-                  SizedBox(height: 24), 
-                  
-                  // ส่วนกราฟแท่ง
-                  RevenueBarChartCard(),
-                ],
+                    SizedBox(height: 24),
+
+                    // ส่วนกราฟแท่ง
+                    RevenueBarChartCard(),
+
+                    SizedBox(height: 24),
+                    Listtopproduct(),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 }

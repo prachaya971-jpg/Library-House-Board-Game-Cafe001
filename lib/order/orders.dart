@@ -74,7 +74,7 @@ class _OrderScreenState extends State<OrderScreen> {
       backgroundColor: const Color.fromARGB(255, 249, 250, 251),
       body: Row(
         children: [
-          AppSidebar(currentRoleId: roleId, currentRouteName: "ออเดอร์"),
+          AppSidebar(currentRoleId: roleId, currentRouteName: "ขอคำปรึกษา"),
 
           Expanded(
             child: Padding(

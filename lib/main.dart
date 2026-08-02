@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'login.dart';
 import 'package:cafa_boardgame/order/orders.dart';
 import 'package:cafa_boardgame/home.dart';
+import 'package:cafa_boardgame/order/raelorder.dart';
 
 void main() {
   runApp(const MyApp());
@@ -40,6 +41,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const Login(),
         '/home': (context) => const Home(),
         '/order': (context) => const OrderScreen(),
+        '/orderreal': (context) => const OrderraelScreen()
       },
     );
   }

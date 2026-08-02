@@ -76,8 +76,14 @@ class _AppSidebarState extends State<AppSidebar> {
         allowedRoles: [1, 2],
       ),
       SidebarMenuItem(
-        title: "ออเดอร์",
+        title: "ขอคำปรึกษา",
         targetScreen: '/order',
+        allowedRoles: [1, 2],
+        badgeCount: _orderCount,
+      ),
+      SidebarMenuItem(
+        title: "ออร์เดอร์",
+        targetScreen: '/orderreal',
         allowedRoles: [1, 2],
         badgeCount: _orderCount,
       ),
