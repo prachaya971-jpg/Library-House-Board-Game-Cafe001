@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:cafa_boardgame/utils/appapi.dart';
+import 'package:cafa_boardgame/config/app_config.dart';
 
 class Listtopproduct extends StatefulWidget {
   const Listtopproduct({super.key});
@@ -13,10 +14,12 @@ class Listtopproduct extends StatefulWidget {
 class _ListtopproductState extends State<Listtopproduct> {
   bool _isLoading = false;
   String _selectedCategory = 'food'; // 'food', 'boardgame', 'borrow'
-  String _selectedPeriod = 'daily';   // 'daily', 'monthly', 'yearly'
-  
+  String _selectedPeriod = 'daily'; // 'daily', 'monthly', 'yearly'
+
   // 🟢 Controller สำหรับช่องกรอก Limit
-  final TextEditingController _limitController = TextEditingController(text: '5');
+  final TextEditingController _limitController = TextEditingController(
+    text: '5',
+  );
   int _limitValue = 5;
 
   List<dynamic> _topProducts = [];
@@ -33,12 +36,40 @@ class _ListtopproductState extends State<Listtopproduct> {
     super.dispose();
   }
 
+  String _getFolderName(String? category) {
+    if (category == null || category.isEmpty) return 'food';
+
+    final cat = category.toLowerCase().trim();
+    if (cat == 'อาหาร' || cat == 'เครื่องดื่ม' || cat == 'food') return 'food';
+    if (cat == 'ขายบอร์ดเกม' || cat == 'boardgame') return 'boardgame';
+    if (cat == 'ยืมเล่น' || cat == 'borrow') return 'borrow';
+
+    return cat;
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: Colors.brown[100],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(
+        Icons.image_not_supported,
+        color: Colors.brown[800],
+        size: 22,
+      ),
+    );
+  }
+
   // 🟢 ดึงข้อมูล API โดยส่ง period, category และ limit
   Future<void> _fetchTopProducts() async {
     setState(() => _isLoading = true);
     try {
-      final String url = '/dashboard/topproducts?period=$_selectedPeriod&category=$_selectedCategory&limit=$_limitValue';
-      
+      final String url =
+          '/dashboard/topproducts?period=$_selectedPeriod&category=$_selectedCategory&limit=$_limitValue';
+
       final response = await AppAPI.get(url);
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
@@ -57,11 +88,10 @@ class _ListtopproductState extends State<Listtopproduct> {
     }
   }
 
-  // ฟังก์ชันยื่นส่งค่า Limit ใหม่เมื่อผู้ใช้กด Enter หรือกดยืนยัน
   void _onLimitSubmitted(String value) {
     int parsed = int.tryParse(value) ?? 5;
-    if (parsed <= 0) parsed = 1; // บังคับขั้นต่ำอย่างน้อย 1 รายการ
-    if (parsed > 100) parsed = 100; // บังคับสูงสุดไม่เกิน 100 รายการ
+    if (parsed <= 0) parsed = 1;
+    if (parsed > 100) parsed = 100;
 
     setState(() {
       _limitValue = parsed;
@@ -121,18 +151,31 @@ class _ListtopproductState extends State<Listtopproduct> {
                               controller: _limitController,
                               keyboardType: TextInputType.number,
                               textAlign: TextAlign.center,
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
                               decoration: InputDecoration(
-                                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 4),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 0,
+                                  horizontal: 4,
+                                ),
                                 isDense: true,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(color: Color(0xFFD49A32), width: 1.5),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFD49A32),
+                                    width: 1.5,
+                                  ),
                                 ),
                               ),
                               onSubmitted: _onLimitSubmitted,
@@ -148,7 +191,10 @@ class _ListtopproductState extends State<Listtopproduct> {
 
                       // 📅 ปุ่มเลือกช่วงเวลา (รายวัน / รายเดือน / รายปี)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.grey[100],
                           borderRadius: BorderRadius.circular(8),
@@ -169,7 +215,7 @@ class _ListtopproductState extends State<Listtopproduct> {
               ),
               const SizedBox(height: 12),
 
-              // 🏷️ ปุ่มเลือกหมวดหมู่สินค้า
+              //  ปุ่มเลือกหมวดหมู่สินค้า
               Row(
                 children: [
                   _buildCategoryChip('food', 'อาหาร/เครื่องดื่ม'),
@@ -185,98 +231,148 @@ class _ListtopproductState extends State<Listtopproduct> {
           const Divider(height: 1),
           const SizedBox(height: 16),
 
-          // 📜 ส่วนแสดงรายการสินค้า
+          //  ส่วนแสดงรายการสินค้า
           _isLoading
               ? const Padding(
                   padding: EdgeInsets.all(32.0),
                   child: Center(child: CircularProgressIndicator()),
                 )
               : _topProducts.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: Center(child: Text('ไม่พบข้อมูลยอดขาย')),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _topProducts.length,
-                      itemBuilder: (context, index) {
-                        final item = _topProducts[index];
-                        
-                        final num revenue = num.tryParse(item['total_revenue']?.toString() ?? '0') ?? 0;
-                        final int quantity = int.tryParse(item['total_quantity']?.toString() ?? '0') ?? 0;
+              ? const Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Center(child: Text('ไม่พบข้อมูลยอดขาย')),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _topProducts.length,
+                  itemBuilder: (context, index) {
+                    final item = _topProducts[index];
 
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          elevation: 0,
-                          color: const Color(0xFFF8F9FA),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(color: Colors.grey.shade200),
+                    final num revenue =
+                        num.tryParse(
+                          item['total_revenue']?.toString() ?? '0',
+                        ) ??
+                        0;
+                    final int quantity =
+                        int.tryParse(
+                          item['total_quantity']?.toString() ?? '0',
+                        ) ??
+                        0;
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      elevation: 0,
+                      color: const Color(0xFFF8F9FA),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Builder(
+                            builder: (context) {
+                              final item = _topProducts[index];
+
+                              final String? imageName = item['image'];
+                              final String? rawCategory = item['category'];
+
+                              // แปลงชื่อหมวดหมู่ภาษาไทยเป็นชื่อ Folder ภาษาอังกฤษ
+                              final String folderName = _getFolderName(
+                                rawCategory,
+                              );
+
+                              // กำหนด Base URL ตรงไปยัง /img/
+                              const String serverUrl =
+                                  'http://localhost:3000/img/';
+
+                              if (imageName != null && imageName.isNotEmpty) {
+                                final String imageUrl =
+                                    imageName.startsWith('http')
+                                    ? imageName
+                                    : '$serverUrl$folderName/$imageName';
+
+                                return Image.network(
+                                  imageUrl,
+                                  width: 44,
+                                  height: 44,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                        if (loadingProgress == null)
+                                          return child;
+                                        return Container(
+                                          width: 44,
+                                          height: 44,
+                                          color: Colors.brown[100],
+                                          child: const Center(
+                                            child: SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    print(" image isn't loading in URL: $imageUrl");
+                                    print(" ErrorMessage : $error");
+                                    return _buildPlaceholder();
+                                  },
+                                );
+                              }
+
+                              return _buildPlaceholder();
+                            },
                           ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            leading: Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: Colors.brown[100],
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '#${index + 1}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.brown[800],
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            title: Text(
-                              item['product_name'] ?? '',
+                        ),
+                        title: Text(
+                          item['product_name'] ?? '',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'หมวดหมู่: ${item['category'] ?? ''}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 13,
+                          ),
+                        ),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              'จำนวน: $quantity',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 15,
+                                fontSize: 14,
                               ),
                             ),
-                            subtitle: Text(
-                              'หมวดหมู่: ${item['category'] ?? ''}',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 13,
-                              ),
-                            ),
-                            trailing: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  'จำนวน: $quantity',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
+                            if (item['category'] != 'borrow')
+                              Text(
+                                '฿${revenue.toStringAsFixed(0)}',
+                                style: TextStyle(
+                                  color: Colors.green[700],
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
                                 ),
-                                if (item['category'] != 'borrow')
-                                  Text(
-                                    '฿${revenue.toStringAsFixed(0)}',
-                                    style: TextStyle(
-                                      color: Colors.green[700],
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
         ],
       ),
     );
@@ -306,7 +402,7 @@ class _ListtopproductState extends State<Listtopproduct> {
                     color: Colors.black.withOpacity(0.08),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
-                  )
+                  ),
                 ]
               : [],
         ),
