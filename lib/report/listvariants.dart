@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:cafa_boardgame/utils/appapi.dart';
 
 class ListVariants extends StatefulWidget {
-  const ListVariants({super.key});
+  final int? roleId; // สามารถรับ roleId จากหน้าหลักได้ (Optional)
+
+  const ListVariants({super.key, this.roleId});
 
   @override
   State<ListVariants> createState() => _ListVariantsState();
@@ -12,14 +16,35 @@ class ListVariants extends StatefulWidget {
 class _ListVariantsState extends State<ListVariants> {
   bool _isLoading = false;
   List<dynamic> _variantsList = [];
+  int _currentRoleId = 2; // ค่าเริ่มต้นเป็นพนักงานทั่วไป (2)
 
   @override
   void initState() {
     super.initState();
+    _loadRole();
     _fetchVariants();
   }
 
-  // 1. ดึงข้อมูลรายการ Variant ทั้งหมด
+  // 🟢 ดึงข้อมูล Role จาก Token หากไม่ได้ส่งผ่าน Param
+  Future<void> _loadRole() async {
+    if (widget.roleId != null) {
+      setState(() => _currentRoleId = widget.roleId!);
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    if (token != null && !JwtDecoder.isExpired(token)) {
+      Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+      if (mounted) {
+        setState(() {
+          _currentRoleId = decodedToken['emp_role_id'] ?? 2;
+        });
+      }
+    }
+  }
+
   Future<void> _fetchVariants() async {
     setState(() => _isLoading = true);
     try {
@@ -177,6 +202,9 @@ class _ListVariantsState extends State<ListVariants> {
 
   @override
   Widget build(BuildContext context) {
+    //  เช็คว่าผู้ใช้งานเป็นผู้จัดการ (Role ID = 1) หรือไม่
+    final bool isManager = _currentRoleId == 1;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -268,23 +296,29 @@ class _ListVariantsState extends State<ListVariants> {
                                 fontSize: 15,
                               ),
                             ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // ปุ่มแก้ไข
-                                IconButton(
-                                  icon: const Icon(Icons.edit, color: Colors.orange),
-                                  onPressed: () => _showEditDialog(item),
-                                  tooltip: 'แก้ไข',
-                                ),
-                                // ปุ่มลบ
-                                IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () => _showDeleteDialog(item),
-                                  tooltip: 'ลบ',
-                                ),
-                              ],
-                            ),
+                            //  แสดงปุ่ม แก้ไข/ลบ เฉพาะเมื่อผู้ใช้เป็นผู้จัดการ (isManager == true)
+                            trailing: isManager
+                                ? Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // ปุ่มแก้ไข
+                                      IconButton(
+                                        icon: const Icon(Icons.edit,
+                                            color: Colors.orange),
+                                        onPressed: () => _showEditDialog(item),
+                                        tooltip: 'แก้ไข',
+                                      ),
+                                      // ปุ่มลบ
+                                      IconButton(
+                                        icon: const Icon(Icons.delete,
+                                            color: Colors.red),
+                                        onPressed: () =>
+                                            _showDeleteDialog(item),
+                                        tooltip: 'ลบ',
+                                      ),
+                                    ],
+                                  )
+                                : null,
                           ),
                         );
                       },
