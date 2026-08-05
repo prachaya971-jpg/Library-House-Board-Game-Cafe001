@@ -59,7 +59,7 @@ class _LoginState extends State<Login> {
   } else if (json["errorMassage"] != null) {
     errorMessage = json["errorMassage"] as String;
   } else {
-    errorMessage = "เกิดข้อผิดพลาดในการยืนยันตัวตน";
+    errorMessage = "ไม่พบข้อมูลผู้ใช้ในระบบ หรือบัญชีถูกระงับการใช้งาน";
   }
 
   return (isError, data, errorMessage);

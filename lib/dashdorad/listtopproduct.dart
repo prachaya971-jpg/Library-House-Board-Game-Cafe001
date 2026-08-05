@@ -16,7 +16,7 @@ class _ListtopproductState extends State<Listtopproduct> {
   String _selectedCategory = 'food'; // 'food', 'boardgame', 'borrow'
   String _selectedPeriod = 'daily'; // 'daily', 'monthly', 'yearly'
 
-  // 🟢 Controller สำหรับช่องกรอก Limit
+  //  Controller สำหรับช่องกรอก Limit
   final TextEditingController _limitController = TextEditingController(
     text: '5',
   );
@@ -63,7 +63,7 @@ class _ListtopproductState extends State<Listtopproduct> {
     );
   }
 
-  // 🟢 ดึงข้อมูล API โดยส่ง period, category และ limit
+  //  ดึงข้อมูล API โดยส่ง period, category และ limit
   Future<void> _fetchTopProducts() async {
     setState(() => _isLoading = true);
     try {
@@ -136,7 +136,7 @@ class _ListtopproductState extends State<Listtopproduct> {
 
                   Row(
                     children: [
-                      // 🔢 ช่องกรอกจำนวน Limit
+                      //  ช่องกรอกจำนวน Limit
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [

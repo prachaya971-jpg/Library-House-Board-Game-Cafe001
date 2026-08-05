@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'login.dart';
-import 'package:cafa_boardgame/order/orders.dart';
+import 'package:cafa_boardgame/order/advice.dart';
 import 'package:cafa_boardgame/home.dart';
-import 'package:cafa_boardgame/order/raelorder.dart';
+import 'package:cafa_boardgame/order/order.dart';
+import 'package:cafa_boardgame/create/create.dart';
+import 'package:cafa_boardgame/report/report.dart';
 
 void main() {
   runApp(const MyApp());
@@ -40,8 +42,10 @@ class MyApp extends StatelessWidget {
        routes: {
         '/login': (context) => const Login(),
         '/home': (context) => const Home(),
-        '/order': (context) => const OrderScreen(),
-        '/orderreal': (context) => const OrderraelScreen()
+        '/advice': (context) => const OrderScreen(),
+        '/order': (context) => const OrderraelScreen(),
+        '/create': (context) => const CreateMainPage(),
+        '/reports': (context) => const ReportMainPage(),
       },
     );
   }

@@ -18,6 +18,19 @@ class _OrderraelScreenState extends State<OrderraelScreen> {
   @override
   void initState() {
     super.initState();
+    _loadRoleFromToken();
+  }
+
+  Future<void> _loadRoleFromToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    if (token != null && !JwtDecoder.isExpired(token)) {
+      Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+      setState(() {
+        roleId = decodedToken['emp_role_id'] ?? 1;
+      });
+    }
   }
 
 
