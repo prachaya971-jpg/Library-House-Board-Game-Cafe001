@@ -87,6 +87,13 @@ class _AppSidebarState extends State<AppSidebar> {
         allowedRoles: [1, 2],
         badgeCount: _orderCount,
       ),
+      //รายงานยืมบอร์ดเกม
+      SidebarMenuItem(
+        title: "รายงานการยืมบอร์ดเกม",
+        targetScreen: '/BgBorrowReportPage',
+        allowedRoles: [1, 2],
+        badgeCount: _orderCount,
+      ),
     ];
 
     final visibleMenus = allMenus
@@ -102,7 +109,7 @@ class _AppSidebarState extends State<AppSidebar> {
             padding: const EdgeInsets.symmetric(vertical: 30),
             alignment: Alignment.center,
             child: const Text(
-              "Liberty boardgame",
+              "Library boardgame",
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
