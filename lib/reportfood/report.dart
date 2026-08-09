@@ -2,24 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../app_sidebar.dart';
-import 'caeatevariants.dart';
+import 'listvariants.dart';
+import 'listoption.dart';
+import 'listtype.dart';
 
-class CreateMainPage extends StatefulWidget {
-  const CreateMainPage({Key? key}) : super(key: key);
+class ReportMainPage extends StatefulWidget {
+  const ReportMainPage({Key? key}) : super(key: key);
 
   @override
-  State<CreateMainPage> createState() => _CreateMainPageState();
+  State<ReportMainPage> createState() => _ReportMainPageState();
 }
 
-class _CreateMainPageState extends State<CreateMainPage> {
+class _ReportMainPageState extends State<ReportMainPage> {
   int roleId = 1;
-  String? _selectedCreateType;
+  String? _selectedReportType;
 
-  final List<Map<String, String>> _createOptions = [
-    {'label': 'เพิ่มประเภท/รูปแบบอาหาร (Variants)', 'value': 'variants'},
-    {'label': 'เพิ่มรายการอาหารใหม่ (Food)', 'value': 'food'},
-    {'label': 'เพิ่มบอร์ดเกมสำหรับเล่น (Board Game Play)', 'value': 'bg_play'},
-    {'label': 'เพิ่มบอร์ดเกมสำหรับขาย (Board Game Sale)', 'value': 'bg_sale'},
+  //  รายการประเภทรายงาน/รายการข้อมูลระบบ
+  final List<Map<String, String>> _reportOptions = [
+    {'label': 'รายการรูปแบบตัวเลือก (Variants)', 'value': 'variants'},
+    {'label': 'รายการท็อปปิ้ง/ตัวเลือก (Options)', 'value': 'option'},
+    {'label': 'รายการประเภท (Types)', 'value': 'type'},
+    {'label': 'รายการอาหาร (Foods)', 'value': 'food'},
   ];
 
   @override
@@ -40,29 +43,19 @@ class _CreateMainPageState extends State<CreateMainPage> {
     }
   }
 
-  Widget _buildSelectedForm() {
-    switch (_selectedCreateType) {
+  Widget _buildSelectedReport() {
+    switch (_selectedReportType) {
       case 'variants':
-        return const CreateVariantsPage();
+        return const ListVariants(); 
+      case 'option':
+        return const ListOptions();
+      case 'type':
+        return const  ListType();
       case 'food':
         return const Center(
           child: Padding(
             padding: EdgeInsets.all(32.0),
-            child: Text('ฟอร์มเพิ่มรายการอาหารใหม่ (กำลังพัฒนา)'),
-          ),
-        );
-      case 'bg_play':
-        return const Center(
-          child: Padding(
-            padding: EdgeInsets.all(32.0),
-            child: Text('ฟอร์มเพิ่มบอร์ดเกมสำหรับเล่น (กำลังพัฒนา)'),
-          ),
-        );
-      case 'bg_sale':
-        return const Center(
-          child: Padding(
-            padding: EdgeInsets.all(32.0),
-            child: Text('ฟอร์มเพิ่มบอร์ดเกมสำหรับขาย (กำลังพัฒนา)'),
+            child: Text('รายงานข้อมูลระบบอาหาร'),
           ),
         );
       default:
@@ -82,7 +75,7 @@ class _CreateMainPageState extends State<CreateMainPage> {
           // Sidebar ทางซ้าย
           AppSidebar(
             currentRoleId: roleId,
-            currentRouteName: "จัดการการเพิ่มข้อมูลระบบ",
+            currentRouteName: "รายงานข้อมูลอาหาร",
           ),
 
           // พื้นที่แสดงเนื้อหาฝั่งขวา
@@ -92,12 +85,12 @@ class _CreateMainPageState extends State<CreateMainPage> {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24.0),
                 physics: const AlwaysScrollableScrollPhysics(),
-                child: Center( 
+                child: Center(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      // ส่วนกล่อง Dropdown เลือกรายการ
+                      // ส่วนกล่อง Dropdown เลือกประเภทรายงาน
                       Container(
                         constraints: const BoxConstraints(maxWidth: 500),
                         padding: const EdgeInsets.all(24.0),
@@ -117,7 +110,7 @@ class _CreateMainPageState extends State<CreateMainPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'เลือกข้อมูลที่ต้องการเพิ่ม',
+                              'เลือกรายงานที่ต้องการดู',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -126,7 +119,7 @@ class _CreateMainPageState extends State<CreateMainPage> {
                             ),
                             const SizedBox(height: 16),
                             DropdownButtonFormField<String>(
-                              value: _selectedCreateType,
+                              value: _selectedReportType,
                               hint: const Text('--- เลือกรายการ ---'),
                               decoration: InputDecoration(
                                 border: OutlineInputBorder(
@@ -137,7 +130,7 @@ class _CreateMainPageState extends State<CreateMainPage> {
                                   vertical: 12,
                                 ),
                               ),
-                              items: _createOptions.map((opt) {
+                              items: _reportOptions.map((opt) {
                                 return DropdownMenuItem<String>(
                                   value: opt['value'],
                                   child: Text(opt['label']!),
@@ -145,7 +138,7 @@ class _CreateMainPageState extends State<CreateMainPage> {
                               }).toList(),
                               onChanged: (value) {
                                 setState(() {
-                                  _selectedCreateType = value;
+                                  _selectedReportType = value;
                                 });
                               },
                             ),
@@ -153,10 +146,10 @@ class _CreateMainPageState extends State<CreateMainPage> {
                         ),
                       ),
 
-                      // แสดงฟอร์มที่เลือกให้อยู่ตรงกลางด้านล่าง
-                      if (_selectedCreateType != null) ...[
+                      // แสดงรายงาน/ตารางข้อมูลที่เลือกให้อยู่ตรงกลางด้านล่าง
+                      if (_selectedReportType != null) ...[
                         const SizedBox(height: 24),
-                        _buildSelectedForm(),
+                        _buildSelectedReport(),
                       ],
                     ],
                   ),

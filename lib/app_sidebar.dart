@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cafa_boardgame/config/app_config.dart';
 import 'menu_item_model.dart';
 import 'package:cafa_boardgame/order/advice.dart';
+import 'package:cafa_boardgame/utils/appapi.dart';
+
 
 class AppSidebar extends StatefulWidget {
   final int currentRoleId;
@@ -23,50 +25,59 @@ class AppSidebar extends StatefulWidget {
 
 class _AppSidebarState extends State<AppSidebar> {
   int _orderCount = 0;
-
+  int _adviceCount = 0;
   @override
   void initState() {
     super.initState();
     _fetchOrderCount();
+    _fetchAdviceCount();
   }
 
   Future<void> _fetchOrderCount() async {
     try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String? token = prefs.getString('token');
+    final response = await AppAPI.get('/reports/order-count');
 
-      final uri = Uri.parse('${AppConfig.apiBaseUri}/reports/order-count');
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-
-        if (!json['isError']) {
-          if (mounted) {
-            setState(() {
-              var rawCount = json['data']['total_orders'];
-              if (rawCount is int) {
-                _orderCount = rawCount;
-              } else if (rawCount is String) {
-                _orderCount = int.tryParse(rawCount) ?? 0;
-              } else {
-                _orderCount = 0;
-              }
-            });
-          }
+      if (!json['isError'] && json['data'] != null) {
+        if (mounted) {
+          setState(() {
+            _orderCount = int.tryParse(
+                  json['data']['total_orders']?.toString() ?? '0',
+                ) ??
+                0;
+          });
         }
       }
-    } catch (e) {
-      print("Error fetching order count in sidebar: $e");
     }
+  } catch (e) {
+    print("Error fetching order count in sidebar: $e");
   }
+  }
+
+Future<void> _fetchAdviceCount() async {
+  try {
+    final response = await AppAPI.get('/reports/advice-count');
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+
+      if (!json['isError'] && json['data'] != null) {
+        if (mounted) {
+          setState(() {
+            _adviceCount = int.tryParse(
+                  json['data']['total_advice']?.toString() ?? '0',
+                ) ??
+                0;
+          });
+        }
+      }
+    }
+  } catch (e) {
+    print("Error fetching advice count in sidebar: $e");
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -77,23 +88,24 @@ class _AppSidebarState extends State<AppSidebar> {
         allowedRoles: [1, 2],
       ),
       SidebarMenuItem(
-        title: "ขอคำปรึกษา",
+        title: "คำปรึกษา",
         targetScreen: '/advice',
         allowedRoles: [1, 2],
-        badgeCount: _orderCount,
+        badgeCount: _adviceCount,
       ),
       SidebarMenuItem(
         title: "ออร์เดอร์",
         targetScreen: '/order',
         allowedRoles: [1, 2],
+        badgeCount: _orderCount,
       ),
       SidebarMenuItem(
-        title: "จัดการการเพิ่มข้อมูลระบบ",
+        title: "เพิ่มข้อมูลประเภทอาหาร",
         targetScreen: '/create',
         allowedRoles: [1], 
       ),
       SidebarMenuItem(
-        title: "รายงานข้อมูลระบบ",
+        title: "รายงานข้อมูลอาหาร",
         targetScreen: '/reports',
         allowedRoles: [1, 2], 
       ),

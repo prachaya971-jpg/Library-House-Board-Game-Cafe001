@@ -18,7 +18,7 @@ class _CreateVariantsPageState extends State<CreateVariantsPage> {
     final String variantName = _variantNameController.text.trim();
     if (variantName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกชื่อรูปแบบ/ประเภท')),
+        const SnackBar(content: Text('กรุณากรอกชื่อรูปแบบ')),
       );
       return;
     }
@@ -76,6 +76,7 @@ class _CreateVariantsPageState extends State<CreateVariantsPage> {
               content: Text('เกิดข้อผิดพลาด: ${jsonRes['errorMessage'] ?? 'ไม่สามารถบันทึกได้'}'),
             ),
           );
+          print('Error creating variant: ${jsonRes['errorMessage'] ?? 'ไม่สามารถบันทึกได้'}');
         }
       }
     } catch (e) {

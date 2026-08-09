@@ -3,8 +3,9 @@ import 'login.dart';
 import 'package:cafa_boardgame/order/advice.dart';
 import 'package:cafa_boardgame/home.dart';
 import 'package:cafa_boardgame/order/order.dart';
-import 'package:cafa_boardgame/create/create.dart';
-import 'package:cafa_boardgame/report/report.dart';
+import 'package:cafa_boardgame/createfood/create.dart';
+import 'package:cafa_boardgame/reportfood/report.dart';
+
 
 void main() {
   runApp(const MyApp());
