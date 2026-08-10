@@ -27,7 +27,7 @@ class _OrderScreenState extends State<OrderScreen> {
   Future<void> _fetchTableList() async {
     setState(() => _isLoading = true);
     try {
-      final response = await AppAPI.get('/order/order-list');
+      final response = await AppAPI.get('/advice/advice-list');
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
         if (!json['isError']) {

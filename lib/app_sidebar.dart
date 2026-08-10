@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cafa_boardgame/config/app_config.dart';
 import 'menu_item_model.dart';
-import 'package:cafa_boardgame/order/orders.dart';
+import 'package:cafa_boardgame/order/advice.dart';
 
 class AppSidebar extends StatefulWidget {
   final int currentRoleId;
@@ -23,6 +23,7 @@ class AppSidebar extends StatefulWidget {
 
 class _AppSidebarState extends State<AppSidebar> {
   int _orderCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -77,15 +78,24 @@ class _AppSidebarState extends State<AppSidebar> {
       ),
       SidebarMenuItem(
         title: "ขอคำปรึกษา",
-        targetScreen: '/order',
+        targetScreen: '/advice',
         allowedRoles: [1, 2],
         badgeCount: _orderCount,
       ),
       SidebarMenuItem(
         title: "ออร์เดอร์",
-        targetScreen: '/orderreal',
+        targetScreen: '/order',
         allowedRoles: [1, 2],
-        badgeCount: _orderCount,
+      ),
+      SidebarMenuItem(
+        title: "จัดการการเพิ่มข้อมูลระบบ",
+        targetScreen: '/create',
+        allowedRoles: [1], 
+      ),
+      SidebarMenuItem(
+        title: "รายงานข้อมูลระบบ",
+        targetScreen: '/reports',
+        allowedRoles: [1, 2], 
       ),
       //รายงานยืมบอร์ดเกม
       SidebarMenuItem(
@@ -96,6 +106,7 @@ class _AppSidebarState extends State<AppSidebar> {
       ),
     ];
 
+    // กรองเอาเฉพาะเมนูที่ Role ปัจจุบันมีสิทธิ์เข้าถึง
     final visibleMenus = allMenus
         .where((menu) => menu.allowedRoles.contains(widget.currentRoleId))
         .toList();
@@ -124,8 +135,10 @@ class _AppSidebarState extends State<AppSidebar> {
               itemCount: visibleMenus.length,
               itemBuilder: (context, index) {
                 final item = visibleMenus[index];
+                
                 final bool isActive =
-                    widget.currentRouteName.trim() == item.title.trim();
+                    widget.currentRouteName.trim() == item.title.trim() ||
+                    widget.currentRouteName.trim() == item.targetScreen.trim();
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(
@@ -135,8 +148,21 @@ class _AppSidebarState extends State<AppSidebar> {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(8),
                     onTap: () {
+                      
+                      if (!item.allowedRoles.contains(widget.currentRoleId)) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('คุณไม่มีสิทธิ์เข้าถึงเมนูนี้'),
+                          ),
+                        );
+                        return;
+                      }
+
                       if (!isActive) {
-                        Navigator.pushReplacementNamed(context, item.targetScreen);
+                        Navigator.pushReplacementNamed(
+                          context, 
+                          item.targetScreen,
+                        );
                       }
                     },
                     child: Container(
@@ -206,7 +232,13 @@ class _AppSidebarState extends State<AppSidebar> {
                 onPressed: () async {
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.remove('token');
-                  // TODO: นำทางกลับไปยังหน้า Login
+                  if (context.mounted) {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context, 
+                      '/login', 
+                      (route) => false,
+                    );
+                  }
                 },
                 child: const Text(
                   "ออกจากระบบ",
