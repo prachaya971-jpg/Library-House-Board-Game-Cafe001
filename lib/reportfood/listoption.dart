@@ -74,7 +74,7 @@ class _ListOptionsState extends State<ListOptions> {
 
   // 2. แสดง Dialog แก้ไขรายการ Option
   Future<void> _showEditDialog(Map<String, dynamic> item) async {
-    // 🟢 แก้ไข: เปลี่ยนจาก 'option_id' เป็น 'options_id' ให้ตรงกับ DB
+    //  แก้ไข: เปลี่ยนจาก 'option_id' เป็น 'options_id' ให้ตรงกับ DB
     final int optionId = item['options_id'] ?? item['option_id'] ?? 0;
     final TextEditingController nameController = TextEditingController(
       text: item['option_name'] ?? '',

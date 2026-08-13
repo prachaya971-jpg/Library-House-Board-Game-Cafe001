@@ -216,7 +216,7 @@ class _CreateOptionPageState extends State<CreateOptionPage> {
           const SizedBox(height: 16),
 
           const Text(
-            'รูปไอคอนประกอบ (ถ้ามี)',
+            'รูปประกอบ (ถ้ามี)',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87),
           ),
           const SizedBox(height: 8),

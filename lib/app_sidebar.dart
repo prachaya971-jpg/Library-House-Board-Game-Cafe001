@@ -109,7 +109,23 @@ Future<void> _fetchAdviceCount() async {
         targetScreen: '/reports',
         allowedRoles: [1, 2], 
       ),
+      SidebarMenuItem(
+        title: "เพิ่มข้อมูลบอร์ดเกม",
+        targetScreen: '/createboardgame',
+        allowedRoles: [1], 
+      ),
+      SidebarMenuItem(
+        title: "รายงานข้อมูลบอร์ดเกม",
+        targetScreen: '/ReportBoardgameType',
+        allowedRoles: [1, 2], 
+      ),
+       SidebarMenuItem(
+        title: "รายงานยอดขาย/การยืม",
+        targetScreen: '/salereports',
+        allowedRoles: [1, 2], 
+      ),
     ];
+    
 
     // กรองเอาเฉพาะเมนูที่ Role ปัจจุบันมีสิทธิ์เข้าถึง
     final visibleMenus = allMenus
