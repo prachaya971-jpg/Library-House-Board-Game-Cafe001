@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../app_sidebar.dart';
 import 'caeatevariants.dart';
+import 'createoption.dart';
+import 'createtype.dart';
 
 class CreateMainPage extends StatefulWidget {
   const CreateMainPage({Key? key}) : super(key: key);
@@ -16,10 +18,10 @@ class _CreateMainPageState extends State<CreateMainPage> {
   String? _selectedCreateType;
 
   final List<Map<String, String>> _createOptions = [
-    {'label': 'เพิ่มประเภท/รูปแบบอาหาร (Variants)', 'value': 'variants'},
-    {'label': 'เพิ่มรายการอาหารใหม่ (Food)', 'value': 'food'},
-    {'label': 'เพิ่มบอร์ดเกมสำหรับเล่น (Board Game Play)', 'value': 'bg_play'},
-    {'label': 'เพิ่มบอร์ดเกมสำหรับขาย (Board Game Sale)', 'value': 'bg_sale'},
+    {'label': 'เพิ่มรูปแบบอาหาร (Variants)', 'value': 'variants'},
+    {'label': 'เพิ่มท้อปปิ้ง/ตัวเลือก (Option)', 'value': 'option'},
+    {'label': 'เพิ่มประเภท (Type)', 'value': 'Type'},
+    {'label': 'เพิ่มอาหาร (Food)', 'value': 'food'},
   ];
 
   @override
@@ -44,25 +46,15 @@ class _CreateMainPageState extends State<CreateMainPage> {
     switch (_selectedCreateType) {
       case 'variants':
         return const CreateVariantsPage();
+      case 'option':
+        return  const CreateOptionPage();
+      case 'Type':
+        return  const CreateTypesPage();
       case 'food':
         return const Center(
           child: Padding(
             padding: EdgeInsets.all(32.0),
-            child: Text('ฟอร์มเพิ่มรายการอาหารใหม่ (กำลังพัฒนา)'),
-          ),
-        );
-      case 'bg_play':
-        return const Center(
-          child: Padding(
-            padding: EdgeInsets.all(32.0),
-            child: Text('ฟอร์มเพิ่มบอร์ดเกมสำหรับเล่น (กำลังพัฒนา)'),
-          ),
-        );
-      case 'bg_sale':
-        return const Center(
-          child: Padding(
-            padding: EdgeInsets.all(32.0),
-            child: Text('ฟอร์มเพิ่มบอร์ดเกมสำหรับขาย (กำลังพัฒนา)'),
+            child: Text('ฟอร์มเพิ่มอาหาร'),
           ),
         );
       default:
@@ -82,7 +74,7 @@ class _CreateMainPageState extends State<CreateMainPage> {
           // Sidebar ทางซ้าย
           AppSidebar(
             currentRoleId: roleId,
-            currentRouteName: "จัดการการเพิ่มข้อมูลระบบ",
+            currentRouteName: "เพิ่มข้อมูลประเภทอาหาร",
           ),
 
           // พื้นที่แสดงเนื้อหาฝั่งขวา

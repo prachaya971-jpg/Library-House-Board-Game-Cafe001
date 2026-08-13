@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:cafa_boardgame/utils/appapi.dart';
-import 'package:cafa_boardgame/config/app_config.dart';
 import '../app_sidebar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
@@ -19,31 +17,22 @@ int roleId = 1;
 
 class _BgBorrowReportPageState extends State<BgBorrowReportPage> {
   bool _isLoading = false;
-  final String _selectedCategory = 'borrow';
-  String _selectedPeriod = 'daily'; // 'daily', 'monthly', 'yearly'
+  String _selectedPeriod = 'daily';
 
-  final TextEditingController _limitController = TextEditingController(
-    text: '5',
-  );
-  int _limitValue = 5;
-
-  List<dynamic> _topProducts = [];
   final ScrollController _tableScrollController = ScrollController();
 
-  // 1. ตัวแปรเก็บรายการข้อมูลการยืม
+  // ตัวแปรเก็บรายการข้อมูลการยืม
   List<dynamic> _borrowReportList = [];
 
   @override
   void initState() {
     super.initState();
-    // _fetchTopProducts();
     _loadRoleFromToken();
     _fetchBorrowReport();
   }
 
   @override
   void dispose() {
-    _limitController.dispose();
     _tableScrollController.dispose();
     super.dispose();
   }
@@ -51,23 +40,22 @@ class _BgBorrowReportPageState extends State<BgBorrowReportPage> {
   String _formatDateTime(String? rawDateTime) {
     if (rawDateTime == null || rawDateTime.isEmpty) return '-';
     try {
-      // แปลง String เป็น DateTime แบบ UTC แล้วแปลงเป็น Local Time (เวลาไทย)
+      // แปลง String เป็น DateTime แบบ UTC แล้วแปลงเป็น Local Time
       DateTime dateTime = DateTime.parse(rawDateTime).toLocal();
 
-      // จัด Format เป็น "13/07/2026 05:40 น." หรือ "13 ก.ค. 2026 05:40"
+      // จัด Format วัน"
       return DateFormat('dd/MM/yyyy HH:mm น.').format(dateTime);
     } catch (e) {
       return rawDateTime;
     }
   }
 
-  // 2. ฟังก์ชันดึงข้อมูลประวัติการยืม
+  // ฟังก์ชันดึงข้อมูลประวัติการยืม
   Future<void> _fetchBorrowReport() async {
     setState(() => _isLoading = true);
     try {
-      // ส่ง Query Params ไปที่ Backend
       final String url =
-          '/reports/borrow-report?period=$_selectedPeriod&limit=$_limitValue';
+          '/reports/borrow-report?period=$_selectedPeriod';
 
       final response = await AppAPI.get(url);
       if (response.statusCode == 200) {
@@ -98,59 +86,22 @@ class _BgBorrowReportPageState extends State<BgBorrowReportPage> {
       });
     }
   }
-
-  Widget _buildPlaceholder() {
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        color: Colors.brown[100],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(
-        Icons.image_not_supported,
-        color: Colors.brown[800],
-        size: 22,
-      ),
-    );
-  }
-
-  Future<void> _fetchTopProducts() async {
-    setState(() => _isLoading = true);
-    try {
-      final String url =
-          '/dashboard/topproducts?period=$_selectedPeriod&category=$_selectedCategory&limit=$_limitValue';
-
-      final response = await AppAPI.get(url);
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        if (!json['isError']) {
-          setState(() {
-            _topProducts = json['data'] ?? [];
-          });
-        }
-      } else {
-        debugPrint("Server Error: ${response.statusCode} - ${response.body}");
-      }
-    } catch (e) {
-      debugPrint("Error fetching top products list: $e");
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  void _onLimitSubmitted(String value) {
-    int parsed = int.tryParse(value) ?? 5;
-    if (parsed <= 0) parsed = 1;
-    if (parsed > 100) parsed = 100;
-
-    setState(() {
-      _limitValue = parsed;
-      _limitController.text = parsed.toString();
-    });
-    
-    _fetchBorrowReport(); 
-  }
+//สร้างภาพทิ้งไว้ก่อน (placeholder)
+  // Widget _buildPlaceholder() {
+  //   return Container(
+  //     width: 44,
+  //     height: 44,
+  //     decoration: BoxDecoration(
+  //       color: Colors.brown[100],
+  //       borderRadius: BorderRadius.circular(8),
+  //     ),
+  //     child: Icon(
+  //       Icons.image_not_supported,
+  //       color: Colors.brown[800],
+  //       size: 22,
+  //     ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +121,7 @@ class _BgBorrowReportPageState extends State<BgBorrowReportPage> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -180,7 +131,7 @@ class _BgBorrowReportPageState extends State<BgBorrowReportPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ส่วน Header
+                  // Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -194,62 +145,6 @@ class _BgBorrowReportPageState extends State<BgBorrowReportPage> {
                       ),
                       Row(
                         children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text(
-                                'แสดงTop: ',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              SizedBox(
-                                width: 50,
-                                height: 32,
-                                child: TextField(
-                                  controller: _limitController,
-                                  keyboardType: TextInputType.number,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
-                                  ],
-                                  decoration: InputDecoration(
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      vertical: 0,
-                                      horizontal: 4,
-                                    ),
-                                    isDense: true,
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(
-                                        color: Colors.grey.shade300,
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: const BorderSide(
-                                        color: Color(0xFFD49A32),
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                  ),
-                                  onSubmitted: _onLimitSubmitted,
-                                ),
-                              ),
-                              const Text(
-                                ' รายการ',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
                           const SizedBox(width: 12),
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -264,9 +159,9 @@ class _BgBorrowReportPageState extends State<BgBorrowReportPage> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                _buildPeriodButton('daily', 'รายวัน'),
-                                _buildPeriodButton('monthly', 'รายเดือน'),
-                                _buildPeriodButton('yearly', 'รายปี'),
+                                _borrowstatusButton('all', 'ทั้งหมด'),
+                                _borrowstatusButton('daily', 'การยืมวันนี้'),
+                                _borrowstatusButton('unreturn', 'ยังไม่คืน'),
                               ],
                             ),
                           ),
@@ -452,7 +347,7 @@ class _BgBorrowReportPageState extends State<BgBorrowReportPage> {
     );
   }
 
-  Widget _buildPeriodButton(String periodKey, String label) {
+  Widget _borrowstatusButton(String periodKey, String label) {
     final isSelected = _selectedPeriod == periodKey;
     return InkWell(
       onTap: () {

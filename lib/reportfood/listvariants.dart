@@ -5,7 +5,7 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:cafa_boardgame/utils/appapi.dart';
 
 class ListVariants extends StatefulWidget {
-  final int? roleId; // สามารถรับ roleId จากหน้าหลักได้ (Optional)
+  final int? roleId; 
 
   const ListVariants({super.key, this.roleId});
 
@@ -16,7 +16,7 @@ class ListVariants extends StatefulWidget {
 class _ListVariantsState extends State<ListVariants> {
   bool _isLoading = false;
   List<dynamic> _variantsList = [];
-  int _currentRoleId = 2; // ค่าเริ่มต้นเป็นพนักงานทั่วไป (2)
+  int _currentRoleId = 2; 
 
   @override
   void initState() {
@@ -25,7 +25,7 @@ class _ListVariantsState extends State<ListVariants> {
     _fetchVariants();
   }
 
-  // 🟢 ดึงข้อมูล Role จาก Token หากไม่ได้ส่งผ่าน Param
+  
   Future<void> _loadRole() async {
     if (widget.roleId != null) {
       setState(() => _currentRoleId = widget.roleId!);
@@ -66,7 +66,7 @@ class _ListVariantsState extends State<ListVariants> {
     }
   }
 
-  // 2. แสดง Dialog แก้ไขรายการ
+  //  แสดง Dialog แก้ไขรายการ
   Future<void> _showEditDialog(Map<String, dynamic> item) async {
     final int variantId = item['variant_id'] ?? 0;
     final TextEditingController editController = TextEditingController(
@@ -187,7 +187,7 @@ class _ListVariantsState extends State<ListVariants> {
             const SnackBar(content: Text('ลบข้อมูลสำเร็จ')),
           );
         }
-        _fetchVariants(); // โหลดรายการใหม่
+        _fetchVariants(); 
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

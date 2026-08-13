@@ -5,8 +5,11 @@ import 'package:cafa_boardgame/home.dart';
 // import 'package:cafa_boardgame/order/raelorder.dart';
 import 'bg_borrow_report/bg_borrow_report_page.dart';
 import 'package:cafa_boardgame/order/order.dart';
-import 'package:cafa_boardgame/create/create.dart';
-import 'package:cafa_boardgame/report/report.dart';
+import 'package:cafa_boardgame/createfood/create.dart';
+import 'package:cafa_boardgame/reportfood/report.dart';
+import 'package:cafa_boardgame/boardgame/createboardgame/create_boardgame.dart';
+import 'package:cafa_boardgame/boardgame/reportboardgame/report_boardgame.dart';
+
 
 void main() {
   runApp(const MyApp());
@@ -51,6 +54,8 @@ class MyApp extends StatelessWidget {
         '/order': (context) => const OrderraelScreen(),
         '/create': (context) => const CreateMainPage(),
         '/reports': (context) => const ReportMainPage(),
+        '/create_boardgame': (context) => const Createboardgame(),
+        '/report_boardgame': (context) => const reportboardgame(),
       },
     );
   }

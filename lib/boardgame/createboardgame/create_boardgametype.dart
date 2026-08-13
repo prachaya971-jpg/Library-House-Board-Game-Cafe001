@@ -1,24 +1,29 @@
 import 'dart:convert';
+import 'dart:typed_data'; 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cafa_boardgame/config/app_config.dart';
 import 'package:cafa_boardgame/utils/appapi.dart';
 
-class CreateVariantsPage extends StatefulWidget {
-  const CreateVariantsPage({super.key});
+class CreateBoardgametype extends StatefulWidget {
+  const CreateBoardgametype({super.key});
 
   @override
-  State<CreateVariantsPage> createState() => _CreateVariantsPageState();
+  State<CreateBoardgametype> createState() => _CreateBoardgametypeState();
 }
 
-class _CreateVariantsPageState extends State<CreateVariantsPage> {
-  final TextEditingController _variantNameController = TextEditingController();
+class _CreateBoardgametypeState extends State<CreateBoardgametype> {
+  final TextEditingController _boardgametypeNameController = TextEditingController();
   bool _isSubmitting = false;
 
-  Future<void> _submitVariant() async {
-    final String variantName = _variantNameController.text.trim();
-    if (variantName.isEmpty) {
+  Future<void> _submitType() async {
+    final String boardgametypeName = _boardgametypeNameController.text.trim();
+    if (boardgametypeName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกชื่อรูปแบบ/ประเภท')),
+        const SnackBar(content: Text('กรุณากรอกชื่อประเภทบอร์ดเกม')),
       );
       return;
     }
@@ -28,7 +33,7 @@ class _CreateVariantsPageState extends State<CreateVariantsPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('ยืนยันการเพิ่มข้อมูล'),
-          content: Text('คุณต้องการเพิ่มรูปแบบ "$variantName" ใช่หรือไม่?'),
+          content: Text('คุณต้องการเพิ่มประเภท "$boardgametypeName" ใช่หรือไม่?'),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -56,8 +61,8 @@ class _CreateVariantsPageState extends State<CreateVariantsPage> {
 
     try {
       final response = await AppAPI.post(
-        '/food/create-variant',
-        {'variant_name': variantName},
+        '/boardgame/create-type',
+        {'boardgame_typename': boardgametypeName},
       );
 
       var jsonRes = jsonDecode(response.body);
@@ -65,9 +70,9 @@ class _CreateVariantsPageState extends State<CreateVariantsPage> {
       if (response.statusCode == 200 && !jsonRes['isError']) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('เพิ่มรูปแบบใหม่สำเร็จ')),
+            const SnackBar(content: Text('เพิ่มประเภทใหม่สำเร็จ')),
           );
-          _variantNameController.clear();
+          _boardgametypeNameController.clear();
         }
       } else {
         if (mounted) {
@@ -76,10 +81,11 @@ class _CreateVariantsPageState extends State<CreateVariantsPage> {
               content: Text('เกิดข้อผิดพลาด: ${jsonRes['errorMessage'] ?? 'ไม่สามารถบันทึกได้'}'),
             ),
           );
+          print('Error creating type: ${jsonRes['errorMessage'] ?? 'ไม่สามารถบันทึกได้'}');
         }
       }
     } catch (e) {
-      print("Error creating variant: $e");
+      print("Error creating type: $e");
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -111,19 +117,19 @@ class _CreateVariantsPageState extends State<CreateVariantsPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Text(
-            'เพิ่มรูปแบบตัวเลือก (Variant)',
+            'เพิ่มประเภท (Type)',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primary),
           ),
           const SizedBox(height: 16),
           const Text(
-            'ชื่อรูปแบบ',
+            'ชื่อประเภท',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87),
           ),
           const SizedBox(height: 8),
           TextField(
-            controller: _variantNameController,
+            controller: _boardgametypeNameController,
             decoration: InputDecoration(
-              hintText: 'ระบุชื่อรูปแบบ',
+              hintText: 'ระบุชื่อประเภท',
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             ),
@@ -133,7 +139,7 @@ class _CreateVariantsPageState extends State<CreateVariantsPage> {
           Align(
             alignment: Alignment.centerRight,
             child: ElevatedButton(
-              onPressed: _submitVariant,
+              onPressed: _submitType,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color.fromARGB(255, 81, 167, 66),
                 padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 12),

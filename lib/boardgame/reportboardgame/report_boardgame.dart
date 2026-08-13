@@ -1,26 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
-import '../app_sidebar.dart';
-import 'listvariants.dart'; // 🟢 Import หน้า ListVariants
+import '../../app_sidebar.dart';
+import 'report_boardgame_type.dart';
+// import '../app_sidebar.dart';
+// import 'listvariants.dart';
+// import 'listoption.dart';
+// import 'listtype.dart';
 
-class ReportMainPage extends StatefulWidget {
-  const ReportMainPage({Key? key}) : super(key: key);
+class reportboardgame extends StatefulWidget {
+  const reportboardgame({Key? key}) : super(key: key);
 
   @override
-  State<ReportMainPage> createState() => _ReportMainPageState();
+  State<reportboardgame> createState() => _ReportboardgamePageState();
 }
 
-class _ReportMainPageState extends State<ReportMainPage> {
+class _ReportboardgamePageState extends State<reportboardgame> {
   int roleId = 1;
   String? _selectedReportType;
 
-  // 🟢 รายการประเภทรายงาน/รายการข้อมูลระบบ
+  //  รายการประเภทรายงาน/รายการข้อมูลระบบ
   final List<Map<String, String>> _reportOptions = [
-    {'label': 'รายการรูปแบบตัวเลือก (Variants)', 'value': 'variants'},
-    {'label': 'รายการอาหาร/เครื่องดื่ม (Food)', 'value': 'food'},
-    {'label': 'รายการบอร์ดเกมสำหรับเล่น (Board Game Play)', 'value': 'bg_play'},
-    {'label': 'รายการบอร์ดเกมสำหรับขาย (Board Game Sale)', 'value': 'bg_sale'},
+    {'label': 'รายการประเภทบอร์ดเกม (Type)', 'value': 'type'},
+    // {'label': 'รายการท็อปปิ้ง/ตัวเลือก (Options)', 'value': 'option'},
+    // {'label': 'รายการประเภท (Types)', 'value': 'type'},
+    // {'label': 'รายการอาหาร (Foods)', 'value': 'food'},
   ];
 
   @override
@@ -43,27 +47,17 @@ class _ReportMainPageState extends State<ReportMainPage> {
 
   Widget _buildSelectedReport() {
     switch (_selectedReportType) {
-      case 'variants':
-        return const ListVariants(); 
+      // case 'variants':
+      //   return const ListVariants(); 
+      // case 'option':
+      //   return const ListOptions();
+      case 'type':
+        return const  ReportBoardgameType();
       case 'food':
         return const Center(
           child: Padding(
             padding: EdgeInsets.all(32.0),
-            child: Text('รายงานรายการอาหารใหม่ (กำลังพัฒนา)'),
-          ),
-        );
-      case 'bg_play':
-        return const Center(
-          child: Padding(
-            padding: EdgeInsets.all(32.0),
-            child: Text('รายงานรายการบอร์ดเกมสำหรับเล่น (กำลังพัฒนา)'),
-          ),
-        );
-      case 'bg_sale':
-        return const Center(
-          child: Padding(
-            padding: EdgeInsets.all(32.0),
-            child: Text('รายงานรายการบอร์ดเกมสำหรับขาย (กำลังพัฒนา)'),
+            child: Text('รายงานข้อมูลระบบอาหาร'),
           ),
         );
       default:
@@ -83,7 +77,7 @@ class _ReportMainPageState extends State<ReportMainPage> {
           // Sidebar ทางซ้าย
           AppSidebar(
             currentRoleId: roleId,
-            currentRouteName: "รายงานข้อมูลระบบ",
+            currentRouteName: "รายงานข้อมูลบอร์ดเกม",
           ),
 
           // พื้นที่แสดงเนื้อหาฝั่งขวา
