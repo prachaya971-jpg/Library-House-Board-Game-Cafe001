@@ -14,7 +14,7 @@ class _SalereportfoodState extends State<Salereportfood> {
   final TextEditingController _dateController = TextEditingController();
 
   bool _isLoading = false;
-  List<dynamic> _reportList = []; // ข้อมูลที่ดึงมาจาก Backend โดยตรง
+  List<dynamic> _reportList = [];
 
   @override
   void initState() {
@@ -27,8 +27,6 @@ class _SalereportfoodState extends State<Salereportfood> {
     _dateController.dispose();
     super.dispose();
   }
-
-  // 1. ดึงข้อมูลจาก API โดยส่ง Query Parameter ไปให้ Backend กรอง SQL
   Future<void> _fetchfoodsale() async {
     setState(() => _isLoading = true);
     try {
@@ -98,7 +96,6 @@ class _SalereportfoodState extends State<Salereportfood> {
     });
   }
 
-  // แปลง ISO Date String ให้แสดงผล
   String _formatDateTime(String? isoString) {
     if (isoString == null || isoString.isEmpty) return '-';
     try {
@@ -192,7 +189,7 @@ class _SalereportfoodState extends State<Salereportfood> {
           ),
           const SizedBox(height: 16),
 
-          // ----------------- สรุปยอดขายรวม -----------------
+          //สรุปยอดขายรวม
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -245,7 +242,7 @@ class _SalereportfoodState extends State<Salereportfood> {
           ),
           const SizedBox(height: 16),
 
-          // ----------------- แสดงรายการขาย -----------------
+          // แสดงรายการขาย
           _isLoading
               ? const Padding(
                   padding: EdgeInsets.all(32.0),

@@ -304,7 +304,7 @@ class _OrderScreenState extends State<OrderScreen> {
                 onPressed: () => _markAsAdvised(adviceId, tableNum),
                 icon: const Icon(Icons.check, size: 16, color: Colors.white),
                 label: const Text(
-                  'ให้คำปรึกษาแล้ว',
+                  'ให้คำปรึกษา',
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
