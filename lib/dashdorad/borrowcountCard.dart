@@ -23,7 +23,7 @@ class _BorrowCountCardState extends State<BorrowCountCard> {
   setState(() => _isLoading = true);
 
   try {
-    // 🟢 ใช้ AppAPI.get ยิงไปยัง endpoint ได้สั้นๆ บรรทัดเดียว
+    //  ใช้ AppAPI.get ยิงไปยัง endpoint ได้สั้นๆ บรรทัดเดียว
     final response = await AppAPI.get('/reports/borrow-count');
 
     final json = jsonDecode(response.body);

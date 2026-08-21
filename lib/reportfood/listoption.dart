@@ -10,7 +10,7 @@ import 'package:cafa_boardgame/utils/appapi.dart';
 import 'package:cafa_boardgame/config/app_config.dart';
 
 class ListOptions extends StatefulWidget {
-  final int? roleId; 
+  final int? roleId;
 
   const ListOptions({super.key, this.roleId});
 
@@ -20,8 +20,10 @@ class ListOptions extends StatefulWidget {
 
 class _ListOptionsState extends State<ListOptions> {
   bool _isLoading = false;
+  final TextEditingController _searchController = TextEditingController();
   List<dynamic> _optionsList = [];
-  int _currentRoleId = 2; 
+    List<dynamic> _filteredoptionsList = [];
+  int _currentRoleId = 2;
 
   @override
   void initState() {
@@ -30,6 +32,20 @@ class _ListOptionsState extends State<ListOptions> {
     _fetchOptions();
   }
 
+
+void _filteroption(String query) {
+    setState(() {
+      if (query.trim().isEmpty) {
+        _filteredoptionsList = List.from(_optionsList);
+      } else {
+        _filteredoptionsList = _optionsList.where((option) {
+          final optionName = option['option_name']?.toString().toLowerCase() ?? '';
+          final searchLower = query.toLowerCase();
+          return optionName.contains(searchLower);
+        }).toList();
+      }
+    });
+  }
   // ดึงข้อมูล Role จาก Token
   Future<void> _loadRole() async {
     if (widget.roleId != null) {
@@ -60,6 +76,7 @@ class _ListOptionsState extends State<ListOptions> {
         if (!json['isError']) {
           setState(() {
             _optionsList = json['data'] ?? [];
+             _filteredoptionsList = List.from(_optionsList);
           });
         }
       } else {
@@ -99,8 +116,10 @@ class _ListOptionsState extends State<ListOptions> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('ชื่อท็อปปิ้ง',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      'ชื่อท็อปปิ้ง',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 6),
                     TextField(
                       controller: nameController,
@@ -110,20 +129,26 @@ class _ListOptionsState extends State<ListOptions> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text('ราคา',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      'ราคา',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 6),
                     TextField(
                       controller: priceController,
                       keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
+                        decimal: true,
+                      ),
                       inputFormatters: [
                         FilteringTextInputFormatter.allow(
-                            RegExp(r'^\d+\.?\d{0,2}')),
+                          RegExp(r'^\d+\.?\d{0,2}'),
+                        ),
                       ],
                       decoration: InputDecoration(
                         hintText: 'กรอกราคา',
@@ -131,19 +156,24 @@ class _ListOptionsState extends State<ListOptions> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text('เปลี่ยนรูปภาพ (ถ้ามี)',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      'เปลี่ยนรูปภาพ (ถ้ามี)',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 6),
                     Row(
                       children: [
                         ElevatedButton.icon(
                           onPressed: () async {
                             final XFile? file = await picker.pickImage(
-                                source: ImageSource.gallery);
+                              source: ImageSource.gallery,
+                            );
                             if (file != null) {
                               final bytes = await file.readAsBytes();
                               setDialogState(() {
@@ -153,9 +183,11 @@ class _ListOptionsState extends State<ListOptions> {
                             }
                           },
                           icon: const Icon(Icons.image, size: 18),
-                          label: Text(pickedXFile == null
-                              ? 'เลือกรูปภาพใหม่'
-                              : 'เปลี่ยนรูปภาพ'),
+                          label: Text(
+                            pickedXFile == null
+                                ? 'เลือกรูปภาพใหม่'
+                                : 'เปลี่ยนรูปภาพ',
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.grey[200],
                             foregroundColor: Colors.black87,
@@ -168,9 +200,10 @@ class _ListOptionsState extends State<ListOptions> {
                             child: Text(
                               'เลือกไฟล์ใหม่แล้ว',
                               style: TextStyle(
-                                  color: Colors.green,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold),
+                                color: Colors.green,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -182,16 +215,20 @@ class _ListOptionsState extends State<ListOptions> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child:
-                      const Text('ยกเลิก', style: TextStyle(color: Colors.grey)),
+                  child: const Text(
+                    'ยกเลิก',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFD49A32),
                   ),
                   onPressed: () => Navigator.pop(context, true),
-                  child:
-                      const Text('บันทึก', style: TextStyle(color: Colors.white)),
+                  child: const Text(
+                    'บันทึก',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             );
@@ -264,8 +301,10 @@ class _ListOptionsState extends State<ListOptions> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(
-                    'เกิดข้อผิดพลาด: ${jsonRes['errorMessage'] ?? 'ไม่สามารถแก้ไขได้'}')),
+              content: Text(
+                'เกิดข้อผิดพลาด: ${jsonRes['errorMessage'] ?? 'ไม่สามารถแก้ไขได้'}',
+              ),
+            ),
           );
         }
       }
@@ -291,9 +330,7 @@ class _ListOptionsState extends State<ListOptions> {
               child: const Text('ยกเลิก', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.pop(context, true),
               child: const Text('ลบ', style: TextStyle(color: Colors.white)),
             ),
@@ -310,7 +347,6 @@ class _ListOptionsState extends State<ListOptions> {
   // ส่ง API ลบข้อมูล
   Future<void> _deleteOption(int id) async {
     try {
-      
       final response = await AppAPI.post('/food/delete-option', {
         'options_id': id,
       });
@@ -318,17 +354,19 @@ class _ListOptionsState extends State<ListOptions> {
       final jsonRes = jsonDecode(response.body);
       if (response.statusCode == 200 && !jsonRes['isError']) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('ลบข้อมูลสำเร็จ')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('ลบข้อมูลสำเร็จ')));
         }
         _fetchOptions(); // โหลดรายการใหม่
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(
-                    'เกิดข้อผิดพลาด: ${jsonRes['errorMessage'] ?? 'ไม่สามารถลบได้'}')),
+              content: Text(
+                'เกิดข้อผิดพลาด: ${jsonRes['errorMessage'] ?? 'ไม่สามารถลบได้'}',
+              ),
+            ),
           );
         }
       }
@@ -370,6 +408,48 @@ class _ListOptionsState extends State<ListOptions> {
                   color: Color(0xFF2D3748),
                 ),
               ),
+              const SizedBox(width: 16),
+               Expanded(
+                child: Container(
+                  height: 42,
+                  constraints: const BoxConstraints(maxWidth: 320),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'ค้นหาชื่อท้อปปิ้ง...',
+                      prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 20),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                              onPressed: () {
+                                _searchController.clear();
+                                _filteroption('');
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.blue, width: 1.5),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      _filteroption(value);
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
               IconButton(
                 onPressed: _fetchOptions,
                 icon: const Icon(Icons.refresh, color: Colors.grey),
@@ -388,88 +468,90 @@ class _ListOptionsState extends State<ListOptions> {
                   child: Center(child: CircularProgressIndicator()),
                 )
               : _optionsList.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: Center(child: Text('ไม่พบรายการตัวเลือกเสริม')),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _optionsList.length,
-                      itemBuilder: (context, index) {
-                        final item = _optionsList[index];
-                        final String optionName = item['option_name'] ?? '';
-                        final num optionPrice = num.tryParse(
-                                item['option_price']?.toString() ?? '0') ??
-                            0;
-                        final String? imgName = item['options_img'];
+              ? const Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Center(child: Text('ไม่พบรายการตัวเลือกเสริม')),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _filteredoptionsList.length,
+                  itemBuilder: (context, index) {
+                    final item = _filteredoptionsList[index];
+                    final String optionName = item['option_name'] ?? '';
+                    final num optionPrice =
+                        num.tryParse(item['option_price']?.toString() ?? '0') ??
+                        0;
+                    final String? imgName = item['options_img'];
 
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          elevation: 0,
-                          color: const Color(0xFFF8F9FA),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            side: BorderSide(color: Colors.grey.shade200),
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      elevation: 0,
+                      color: const Color(0xFFF8F9FA),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: imgName != null && imgName.isNotEmpty
+                              ? Image.network(
+                                  '${AppConfig.apiBaseUri.replaceAll('/api', '')}/img/options/$imgName',
+                                  width: 44,
+                                  height: 44,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      _buildDefaultAvatar(index),
+                                )
+                              : _buildDefaultAvatar(index),
+                        ),
+                        title: Text(
+                          optionName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
                           ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 4,
-                            ),
-                            leading: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: imgName != null && imgName.isNotEmpty
-                                  ? Image.network(
-                                      'http://localhost:3000/img/options/$imgName',
-                                      width: 44,
-                                      height: 44,
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) =>
-                                              _buildDefaultAvatar(index),
-                                    )
-                                  : _buildDefaultAvatar(index),
-                            ),
-                            title: Text(
-                              optionName,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                            subtitle: Text(
-                              '+฿${optionPrice.toStringAsFixed(0)}',
-                              style: TextStyle(
-                                color: Colors.green[700],
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
-                            ),
-                            trailing: isManager
-                                ? Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.edit,
-                                            color: Colors.orange),
-                                        onPressed: () => _showEditDialog(item),
-                                        tooltip: 'แก้ไข',
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete,
-                                            color: Colors.red),
-                                        onPressed: () =>
-                                            _showDeleteDialog(item),
-                                        tooltip: 'ลบ',
-                                      ),
-                                    ],
-                                  )
-                                : null,
+                        ),
+                        subtitle: Text(
+                          '+฿${optionPrice.toStringAsFixed(0)}',
+                          style: TextStyle(
+                            color: Colors.green[700],
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                        trailing: isManager
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.edit,
+                                      color: Colors.orange,
+                                    ),
+                                    onPressed: () => _showEditDialog(item),
+                                    tooltip: 'แก้ไข',
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () => _showDeleteDialog(item),
+                                    tooltip: 'ลบ',
+                                  ),
+                                ],
+                              )
+                            : null,
+                      ),
+                    );
+                  },
+                ),
         ],
       ),
     );

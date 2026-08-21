@@ -15,7 +15,9 @@ class ListType extends StatefulWidget {
 
 class _ListTypeState extends State<ListType> {
   bool _isLoading = false;
+   final TextEditingController _searchController = TextEditingController();
   List<dynamic> _typesList = [];
+  List<dynamic> _filteredFoodList = [];
   int _currentRoleId = 2; 
 
   @override
@@ -23,6 +25,20 @@ class _ListTypeState extends State<ListType> {
     super.initState();
     _loadRole();
     _fetchTypes();
+  }
+
+  void _filterFood(String query) {
+    setState(() {
+      if (query.trim().isEmpty) {
+        _filteredFoodList = List.from(_typesList);
+      } else {
+        _filteredFoodList = _typesList.where((food) {
+          final foodName = food['food_type_name']?.toString().toLowerCase() ?? '';
+          final searchLower = query.toLowerCase();
+          return foodName.contains(searchLower);
+        }).toList();
+      }
+    });
   }
 
   Future<void> _loadRole() async {
@@ -44,6 +60,8 @@ class _ListTypeState extends State<ListType> {
     }
   }
 
+
+
   Future<void> _fetchTypes() async {
     setState(() => _isLoading = true);
     try {
@@ -53,6 +71,7 @@ class _ListTypeState extends State<ListType> {
         if (!json['isError']) {
           setState(() {
             _typesList = json['data'] ?? [];
+             _filteredFoodList = List.from(_typesList); 
           });
         }
       } else {
@@ -234,6 +253,49 @@ class _ListTypeState extends State<ListType> {
                   color: Color(0xFF2D3748),
                 ),
               ),
+              const SizedBox(width: 16),
+            
+              Expanded(
+                child: Container(
+                  height: 42,
+                  constraints: const BoxConstraints(maxWidth: 320),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'ค้นหาชื่ออาหาร...',
+                      prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 20),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                              onPressed: () {
+                                _searchController.clear();
+                                _filterFood('');
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.blue, width: 1.5),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      _filterFood(value);
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
               IconButton(
                 onPressed: _fetchTypes,
                 icon: const Icon(Icons.refresh, color: Colors.grey),
@@ -259,9 +321,9 @@ class _ListTypeState extends State<ListType> {
                   : ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _typesList.length,
+                      itemCount: _filteredFoodList.length,
                       itemBuilder: (context, index) {
-                        final item = _typesList[index];
+                        final item = _filteredFoodList[index];
                 
                         final String typeName = item['food_type_name'] ??
                             item['type_name'] ??
