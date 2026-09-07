@@ -2,28 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../app_sidebar.dart';
-import 'caeatevariants.dart';
-import 'createoption.dart';
-import 'createtype.dart';
-import 'createfood.dart';
+// import 'caeatevariants.dart';
+// import 'createoption.dart';
+// import 'createtype.dart';
+import 'create_boardgametype.dart';
 
-
-class CreateMainPage extends StatefulWidget {
-  const CreateMainPage({Key? key}) : super(key: key);
+class Createboardgame extends StatefulWidget {
+  const Createboardgame({Key? key}) : super(key: key);
 
   @override
-  State<CreateMainPage> createState() => _CreateMainPageState();
+  State<Createboardgame> createState() => _CreateboardgameState();
 }
 
-class _CreateMainPageState extends State<CreateMainPage> {
+class _CreateboardgameState extends State<Createboardgame> {
   int roleId = 1;
   String? _selectedCreateType;
 
-  final List<Map<String, String>> _createOptions = [
-    {'label': 'เพิ่มรูปแบบอาหาร (Variants)', 'value': 'variants'},
-    {'label': 'เพิ่มท้อปปิ้ง/ตัวเลือก (Option)', 'value': 'option'},
-    {'label': 'เพิ่มประเภท (Type)', 'value': 'Type'},
-    {'label': 'เพิ่มอาหาร (Food)', 'value': 'food'},
+  final List<Map<String, String>> _createboardgameOptions = [
+    {'label': 'เพิ่มประเภทบอร์ดเกม (type)', 'value': 'type'},
+    {'label': 'เพิ่มข้อมูลบอร์ดเกม (boardgame)', 'value': 'boardgame'},
+    // {'label': 'เพิ่มซีรีย์บอร์ดเกม (series)', 'value': 'series'},
   ];
 
   @override
@@ -46,14 +44,15 @@ class _CreateMainPageState extends State<CreateMainPage> {
 
   Widget _buildSelectedForm() {
     switch (_selectedCreateType) {
-      case 'variants':
-        return const CreateVariantsPage();
-      case 'option':
-        return  const CreateOptionPage();
-      case 'Type':
-        return  const CreateTypesPage();
-      case 'food':
-        return const AddFoodPage();
+      case 'type':
+        return const CreateBoardgametype();
+      case 'boardgame':
+        return const Center(
+          child: Padding(
+            padding: EdgeInsets.all(32.0),
+            child: Text('กำลังพัฒนา'),
+          ),
+        );
       default:
         return const SizedBox.shrink();
     }
@@ -71,7 +70,7 @@ class _CreateMainPageState extends State<CreateMainPage> {
           // Sidebar ทางซ้าย
           AppSidebar(
             currentRoleId: roleId,
-            currentRouteName: "เพิ่มข้อมูลประเภทอาหาร",
+            currentRouteName: "เพิ่มข้อมูลบอร์ดเกม",
           ),
 
           // พื้นที่แสดงเนื้อหาฝั่งขวา
@@ -126,7 +125,7 @@ class _CreateMainPageState extends State<CreateMainPage> {
                                   vertical: 12,
                                 ),
                               ),
-                              items: _createOptions.map((opt) {
+                              items: _createboardgameOptions.map((opt) {
                                 return DropdownMenuItem<String>(
                                   value: opt['value'],
                                   child: Text(opt['label']!),

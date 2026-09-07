@@ -7,8 +7,10 @@ import 'bg_borrow_report/bg_borrow_report_page.dart';
 import 'package:cafa_boardgame/order/order.dart';
 import 'package:cafa_boardgame/createfood/create.dart';
 import 'package:cafa_boardgame/reportfood/report.dart';
-import 'package:cafa_boardgame/boardgame/createboardgame/create_boardgame.dart';
-import 'package:cafa_boardgame/boardgame/reportboardgame/report_boardgame.dart';
+import 'package:cafa_boardgame/salereport/salereport.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:cafa_boardgame/createboardgame/create_boardgame.dart';
+import 'package:cafa_boardgame/reportboardgame/report_boardgame.dart';
 
 
 void main() {
@@ -24,6 +26,15 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Liberty Board Game Cafe',
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('th', 'TH'), // ภาษาไทย
+        Locale('en', 'US'), // ภาษาอังกฤษ
+      ],
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -54,8 +65,10 @@ class MyApp extends StatelessWidget {
         '/order': (context) => const OrderraelScreen(),
         '/create': (context) => const CreateMainPage(),
         '/reports': (context) => const ReportMainPage(),
-        '/create_boardgame': (context) => const Createboardgame(),
-        '/report_boardgame': (context) => const reportboardgame(),
+        '/salereports': (context) => const Salereport(),
+        '/createboardgame': (context) => const Createboardgame(),
+        '/ReportBoardgameType': (context) => const reportboardgame(),
+        
       },
     );
   }

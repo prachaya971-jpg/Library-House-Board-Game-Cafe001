@@ -37,11 +37,13 @@ dependencies:
   google_fonts: ^8.1.0
   crypto: ^3.0.7
   http: ^1.6.0
-  intl: ^0.20.3
+  intl: 0.20.2
   shared_preferences: ^2.5.5
   jwt_decoder: ^2.0.1
   fl_chart: ^1.2.0
   image_picker: ^1.2.3
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:

@@ -109,25 +109,23 @@ Future<void> _fetchAdviceCount() async {
         targetScreen: '/reports',
         allowedRoles: [1, 2], 
       ),
-      // เพิ่มข้อมูลประเภทบอร์ดเกม
       SidebarMenuItem(
         title: "เพิ่มข้อมูลบอร์ดเกม",
-        targetScreen: '/create_boardgame',
-        allowedRoles: [1, 2],
+        targetScreen: '/createboardgame',
+        allowedRoles: [1], 
       ),
-      // รายงานข้อมูลประเภทบอร์ดเกม
       SidebarMenuItem(
         title: "รายงานข้อมูลบอร์ดเกม",
-        targetScreen: '/report_boardgame',
-        allowedRoles: [1, 2],
+        targetScreen: '/ReportBoardgameType',
+        allowedRoles: [1, 2], 
       ),
-      //รายงานยืมบอร์ดเกม
-      SidebarMenuItem(
-        title: "รายงานการยืมบอร์ดเกม",
-        targetScreen: '/BgBorrowReportPage',
-        allowedRoles: [1, 2],
+       SidebarMenuItem(
+        title: "รายงานยอดขาย/การยืม",
+        targetScreen: '/salereports',
+        allowedRoles: [1, 2], 
       ),
     ];
+    
 
     // กรองเอาเฉพาะเมนูที่ Role ปัจจุบันมีสิทธิ์เข้าถึง
     final visibleMenus = allMenus
