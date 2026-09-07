@@ -1,11 +1,11 @@
 import 'dart:convert';
-import 'dart:typed_data'; 
+// import 'dart:typed_data'; 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cafa_boardgame/config/app_config.dart';
+// import 'package:image_picker/image_picker.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:cafa_boardgame/config/app_config.dart';
 import 'package:cafa_boardgame/utils/appapi.dart';
 
 class CreateBoardgametype extends StatefulWidget {

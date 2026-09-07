@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../../app_sidebar.dart';
 import 'report_boardgame_type.dart';
+import 'report_boardgame_borrow.dart';
 // import '../app_sidebar.dart';
 // import 'listvariants.dart';
 // import 'listoption.dart';
@@ -22,9 +23,8 @@ class _ReportboardgamePageState extends State<reportboardgame> {
   //  รายการประเภทรายงาน/รายการข้อมูลระบบ
   final List<Map<String, String>> _reportOptions = [
     {'label': 'รายการประเภทบอร์ดเกม (Type)', 'value': 'type'},
-    // {'label': 'รายการท็อปปิ้ง/ตัวเลือก (Options)', 'value': 'option'},
-    // {'label': 'รายการประเภท (Types)', 'value': 'type'},
-    // {'label': 'รายการอาหาร (Foods)', 'value': 'food'},
+    {'label': 'รายการบอร์ดเกมสำหรับยืม (boardgame for borrow)', 'value': 'boardgame_borrow'},
+    
   ];
 
   @override
@@ -53,6 +53,8 @@ class _ReportboardgamePageState extends State<reportboardgame> {
       //   return const ListOptions();
       case 'type':
         return const  ReportBoardgameType();
+      case 'boardgame_borrow':
+        return const ReportBoardgameforborrow();
       case 'food':
         return const Center(
           child: Padding(

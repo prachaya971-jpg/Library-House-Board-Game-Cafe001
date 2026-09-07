@@ -4,18 +4,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:cafa_boardgame/utils/appapi.dart';
 
-class ReportBoardgameType extends StatefulWidget {
+class ReportBoardgameforborrow extends StatefulWidget {
   final int? roleId; 
 
-  const ReportBoardgameType({super.key, this.roleId});
+  const ReportBoardgameforborrow({super.key, this.roleId});
 
   @override
-  State<ReportBoardgameType> createState() => _ReportBoardgameTypeState();
+  State<ReportBoardgameforborrow> createState() => _ReportBoardgameforborrowState();
 }
 
-class _ReportBoardgameTypeState extends State<ReportBoardgameType> {
+class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
   bool _isLoading = false;
-  List<dynamic> _typesList = [];
+  List<dynamic> _bgborrowList = [];
   int _currentRoleId = 2; 
 
   final TextEditingController _searchController = TextEditingController();
@@ -28,15 +28,15 @@ class _ReportBoardgameTypeState extends State<ReportBoardgameType> {
     _fetchTypes();
   }
 
-  void _filterboardgametype(String query) {
+  void _filterboardgameborrow(String query) {
     setState(() {
       if (query.trim().isEmpty) {
-        _filteredboardgameborrow = List.from(_typesList);
+        _filteredboardgameborrow = List.from(_bgborrowList);
       } else {
-        _filteredboardgameborrow = _typesList.where((bgtype) {
-          final bgtypeName = bgtype['catagory_bg_name']?.toString().toLowerCase() ?? '';
+        _filteredboardgameborrow = _bgborrowList.where((bgborrow) {
+          final bgborrowName = bgborrow['bgp_name']?.toString().toLowerCase() ?? '';
           final searchLower = query.toLowerCase();
-          return bgtypeName.contains(searchLower);
+          return bgborrowName.contains(searchLower);
         }).toList();
       }
     });
@@ -64,13 +64,13 @@ class _ReportBoardgameTypeState extends State<ReportBoardgameType> {
   Future<void> _fetchTypes() async {
     setState(() => _isLoading = true);
     try {
-      final response = await AppAPI.get('/boardgame/report-type');
+      final response = await AppAPI.get('/boardgame/report-bgborrow');
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
         if (!json['isError']) {
           setState(() {
-            _typesList = json['data'] ?? [];
-            _filteredboardgameborrow = List.from(_typesList);
+            _bgborrowList = json['data'] ?? [];
+            _filteredboardgameborrow = List.from(_bgborrowList);
           });
         }
       } else {
@@ -85,14 +85,14 @@ class _ReportBoardgameTypeState extends State<ReportBoardgameType> {
 
   // 2. แสดง Dialog แก้ไขรายการ
   Future<void> _showEditDialog(Map<String, dynamic> item) async {
-    final int typeId = item['catagory_bg_id'] ?? item['boardgame_type_id'] ?? 0;
+    final int bgborrowid = item['bgborrow_id'] ?? item['bgp_id'] ?? 0;
     final TextEditingController editController = TextEditingController(
-      text: item['boardgame_type_name'] ?? item['catagory_bg_name'] ?? '',
+      text: item['bgp_name'] ?? item['catagory_bg_name'] ?? '',
     );
 
     final bool? confirm = await showDialog<bool>(
       context: context,
-      builder: (context) {
+      builder: (context) { 
         return AlertDialog(
           title: const Text('แก้ไขชื่อประเภท'),
           content: TextField(
@@ -124,7 +124,7 @@ class _ReportBoardgameTypeState extends State<ReportBoardgameType> {
     if (confirm == true) {
       final newName = editController.text.trim();
       if (newName.isNotEmpty) {
-        _updateType(typeId, newName);
+        _updateType(bgborrowid, newName);
       }
     }
   }
@@ -135,7 +135,7 @@ class _ReportBoardgameTypeState extends State<ReportBoardgameType> {
       
       final response = await AppAPI.post('/boardgame/update-type', {
         'boardgame_type_id': id,
-        'boardgame_type_name': newName,
+        'bgp_name': newName,
       });
 
       final jsonRes = jsonDecode(response.body);
@@ -160,15 +160,15 @@ class _ReportBoardgameTypeState extends State<ReportBoardgameType> {
 
   // 3. แสดง Dialog ยืนยันการลบ
   Future<void> _showDeleteDialog(Map<String, dynamic> item) async {
-    final int typeId = item['catagory_bg_id'] ?? item['boardgame_type_id'] ?? 0;
-    final String typeName = item['boardgame_type_name'] ?? item['catagory_bg_name'] ?? '';
+    final int bgborrowid = item['bgborrow_id'] ?? item['bgp_id'] ?? 0;
+    final String bgborrowName = item['bgborrow_name'] ?? item['bgp_name'] ?? '';
 
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('ยืนยันการลบข้อมูล'),
-          content: Text('คุณต้องการลบประเภท "$typeName" ใช่หรือไม่?'),
+          content: Text('คุณต้องการลบบอร์ดเกม "$bgborrowName" ใช่หรือไม่?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -187,16 +187,16 @@ class _ReportBoardgameTypeState extends State<ReportBoardgameType> {
     );
 
     if (confirm == true) {
-      _deleteType(typeId);
+      _deleteType(bgborrowid);
     }
   }
 
   // ส่ง API ลบข้อมูล
   Future<void> _deleteType(int id) async {
     try {
-      final response = await AppAPI.post('/boardgame/delete-type', {
-        'boardgame_type_id': id,
-
+      final response = await AppAPI.post('/boardgame/delete-bgborrow', {
+        'bgp_id': id,
+      
       });
 
       final jsonRes = jsonDecode(response.body);
@@ -268,7 +268,7 @@ class _ReportBoardgameTypeState extends State<ReportBoardgameType> {
                               icon: const Icon(Icons.clear, size: 18, color: Colors.grey),
                               onPressed: () {
                                 _searchController.clear();
-                                _filterboardgametype('');
+                                _filterboardgameborrow('');
                               },
                             )
                           : null,
@@ -289,7 +289,7 @@ class _ReportBoardgameTypeState extends State<ReportBoardgameType> {
                       ),
                     ),
                     onChanged: (value) {
-                      _filterboardgametype(value);
+                      _filterboardgameborrow(value);
                     },
                   ),
                 ),
@@ -313,10 +313,10 @@ class _ReportBoardgameTypeState extends State<ReportBoardgameType> {
                   padding: EdgeInsets.all(32.0),
                   child: Center(child: CircularProgressIndicator()),
                 )
-              : _typesList.isEmpty
+              : _bgborrowList.isEmpty
                   ? const Padding(
                       padding: EdgeInsets.all(32.0),
-                      child: Center(child: Text('ไม่พบรายการประเภท')),
+                      child: Center(child: Text('ไม่พบรายการบอร์ดเกม')),
                     )
                   : ListView.builder(
                       shrinkWrap: true,
@@ -324,7 +324,7 @@ class _ReportBoardgameTypeState extends State<ReportBoardgameType> {
                       itemCount: _filteredboardgameborrow.length,
                       itemBuilder: (context, index) {
                         final item = _filteredboardgameborrow[index];
-                        final String typeName = item['catagory_bg_name'] ??
+                        final String typeName = item['bgp_name'] ??
                             // item['type_name'] ??
                             '';
 

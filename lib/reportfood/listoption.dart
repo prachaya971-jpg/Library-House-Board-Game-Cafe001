@@ -421,7 +421,7 @@ class _ListOptionsState extends State<ListOptions> {
                               borderRadius: BorderRadius.circular(8),
                               child: imgName != null && imgName.isNotEmpty
                                   ? Image.network(
-                                      'http://localhost:3000/img/options/$imgName',
+                                      '${AppConfig.apiBaseUri.replaceAll('/api', '')}/img/options/$imgName',
                                       width: 44,
                                       height: 44,
                                       fit: BoxFit.cover,
