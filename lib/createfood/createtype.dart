@@ -49,7 +49,6 @@ class _CreateTypesPageState extends State<CreateTypesPage> {
       },
     );
 
-    // หากผู้ใช้กด "ยกเลิก" หรือปิด Dialog ให้หยุดการทำงาน
     if (confirm != true) return;
 
     setState(() => _isSubmitting = true);

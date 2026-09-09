@@ -4,6 +4,9 @@ import 'package:cafa_boardgame/config/app_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppAPI {
+
+  static String get baseUri => AppConfig.apicusBaseUri;
+ 
   // GET Method
   static Future<http.Response> get(String uri) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();

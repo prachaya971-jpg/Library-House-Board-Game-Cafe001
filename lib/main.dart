@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
-import 'login.dart';
-import 'package:cafa_boardgame/order/advice.dart';
-import 'package:cafa_boardgame/home.dart';
-import 'package:cafa_boardgame/order/order.dart';
-import 'package:cafa_boardgame/createfood/create.dart';
-import 'package:cafa_boardgame/reportfood/report.dart';
-import 'package:cafa_boardgame/salereport/salereport.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:cafa_boardgame/createboardgame/create_boardgame.dart';
-import 'package:cafa_boardgame/reportboardgame/report_boardgame.dart';
 
+import 'login.dart';
+import 'home.dart';
+import 'order/advice.dart';
+import 'order/order.dart';
+import 'createfood/create.dart';
+import 'reportfood/report.dart';
+import 'salereport/salereport.dart';
+import 'createboardgame/create_boardgame.dart';
+import 'reportboardgame/report_boardgame.dart';
+import 'employee/reportemp.dart';
+import 'teble/table.dart';
+import 'cusorder/cusorder.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,7 +21,6 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -29,32 +31,27 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('th', 'TH'), // ภาษาไทย
-        Locale('en', 'US'), // ภาษาอังกฤษ
-      ],
+      supportedLocales: const [Locale('th', 'TH'), Locale('en', 'US')],
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
       ),
-      initialRoute: '/login',
-       routes: {
+      initialRoute: '/',
+
+      onGenerateRoute: (settings) {
+        final name = settings.name ?? '';
+        if (name.startsWith('/menu') || Uri.base.fragment.startsWith('/menu')) {
+          return MaterialPageRoute(
+            builder: (_) => const Cusorder(),
+            settings: settings,
+          );
+        }
+        return null;
+      },
+      routes: {
+        '/': (context) => const Login(),
         '/login': (context) => const Login(),
+        '/menu': (context) => const Cusorder(),
         '/home': (context) => const Home(),
         '/advice': (context) => const OrderScreen(),
         '/order': (context) => const OrderraelScreen(),
@@ -63,12 +60,9 @@ class MyApp extends StatelessWidget {
         '/salereports': (context) => const Salereport(),
         '/createboardgame': (context) => const Createboardgame(),
         '/ReportBoardgameType': (context) => const reportboardgame(),
-        
+        '/emp': (context) => const Employee(),
+        '/table': (context) => const Teble(),
       },
     );
   }
 }
-
-
-
-  

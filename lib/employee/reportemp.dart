@@ -1,64 +1,65 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../app_sidebar.dart';
-import 'listvariants.dart';
-import 'listoption.dart';
-import 'listtype.dart';
-import 'listfood.dart';
+import 'emp.dart';
+import 'createemp.dart';
 
-class ReportMainPage extends StatefulWidget {
-  const ReportMainPage({Key? key}) : super(key: key);
+
+class Employee extends StatefulWidget {
+  const Employee({super.key});
 
   @override
-  State<ReportMainPage> createState() => _ReportMainPageState();
+  State<Employee> createState() => _EmployeeState();
+  
 }
 
-class _ReportMainPageState extends State<ReportMainPage> {
+class _EmployeeState extends State<Employee> {
   int roleId = 1;
-  String? _selectedReportType;
-
-  //  รายการประเภทรายงาน/รายการข้อมูลระบบ
-  final List<Map<String, String>> _reportOptions = [
-    {'label': 'รายการรูปแบบตัวเลือก (Variants)', 'value': 'variants'},
-    {'label': 'รายการท็อปปิ้ง/ตัวเลือก (Options)', 'value': 'option'},
-    {'label': 'รายการประเภท (Types)', 'value': 'type'},
-    {'label': 'รายการอาหาร (Foods)', 'value': 'food'},
+  String _employeeMenu = 'editemp';
+    String? _Employee;
+   static const List<Map<String, String>> _reportsale = [
+    {'label': 'รายการพนักงาน', 'value': 'editemp'},
+    {'label': 'เพิ่มพนักงาน', 'value': 'createemp'},
   ];
-
   @override
   void initState() {
     super.initState();
     _loadRoleFromToken();
   }
 
-  Future<void> _loadRoleFromToken() async {
+ Future<void> _loadRoleFromToken() async {
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
 
     if (token != null && !JwtDecoder.isExpired(token)) {
       Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
-      setState(() {
-        roleId = decodedToken['emp_role_id'] ?? 1;
-      });
+      if (mounted) {
+        setState(() {
+          roleId = decodedToken['emp_role_id'] ?? 1;
+          if (roleId != 1 && _employeeMenu == 'createemp') {
+            _employeeMenu = 'editemp';
+          }
+        });
+      }
     }
   }
+
 
   Widget _buildSelectedReport() {
-    switch (_selectedReportType) {
-      case 'variants':
-        return const ListVariants(); 
-      case 'option':
-        return const ListOptions();
-      case 'type':
-        return const  ListType();
-      case 'food':
-        return  const  ListFood();
+    switch (_Employee) {
+      case 'editemp':
+       return const Listemp();
+      case 'createemp':
+        return const Createemp();
       default:
-        return const  ListFood();
+        return const Listemp();
     }
   }
-
   @override
   Widget build(BuildContext context) {
     const Color primary = Color.fromARGB(255, 0, 0, 0);
@@ -71,7 +72,7 @@ class _ReportMainPageState extends State<ReportMainPage> {
           // Sidebar ทางซ้าย
           AppSidebar(
             currentRoleId: roleId,
-            currentRouteName: "รายงานข้อมูลอาหาร",
+            currentRouteName: "จัดการข้อมูลพนักงาน",
           ),
 
           // พื้นที่แสดงเนื้อหาฝั่งขวา
@@ -115,7 +116,7 @@ class _ReportMainPageState extends State<ReportMainPage> {
                             ),
                             const SizedBox(height: 16),
                             DropdownButtonFormField<String>(
-                              value: _selectedReportType,
+                              value: _Employee,
                               hint: const Text('--- เลือกรายการ ---'),
                               decoration: InputDecoration(
                                 border: OutlineInputBorder(
@@ -126,7 +127,7 @@ class _ReportMainPageState extends State<ReportMainPage> {
                                   vertical: 12,
                                 ),
                               ),
-                              items: _reportOptions.map((opt) {
+                              items: _reportsale.map((opt) {
                                 return DropdownMenuItem<String>(
                                   value: opt['value'],
                                   child: Text(opt['label']!),
@@ -134,7 +135,7 @@ class _ReportMainPageState extends State<ReportMainPage> {
                               }).toList(),
                               onChanged: (value) {
                                 setState(() {
-                                  _selectedReportType = value;
+                                  _Employee = value;
                                 });
                               },
                             ),
@@ -143,7 +144,7 @@ class _ReportMainPageState extends State<ReportMainPage> {
                       ),
 
                       // แสดงรายงาน/ตารางข้อมูลที่เลือกให้อยู่ตรงกลางด้านล่าง
-                      if (_selectedReportType != null) ...[
+                      if (_Employee != null) ...[
                         const SizedBox(height: 24),
                         _buildSelectedReport(),
                       ],

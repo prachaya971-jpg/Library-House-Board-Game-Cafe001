@@ -31,6 +31,21 @@ class _AppSidebarState extends State<AppSidebar> {
     super.initState();
     _fetchOrderCount();
     _fetchAdviceCount();
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+      _verifyAuth();
+    });
+  }
+
+  Future<void> _verifyAuth() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+
+    if (token == null || token.isEmpty) {
+      if (mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+      }
+    }
   }
 
   Future<void> _fetchOrderCount() async {
@@ -122,6 +137,16 @@ Future<void> _fetchAdviceCount() async {
        SidebarMenuItem(
         title: "รายงานยอดขาย/การยืม",
         targetScreen: '/salereports',
+        allowedRoles: [1, 2], 
+      ),
+       SidebarMenuItem(
+        title: "จัดการข้อมูลพนักงาน",
+        targetScreen: '/emp',
+        allowedRoles: [1], 
+      ),
+      SidebarMenuItem(
+        title: "จัดการข้อมูลโต๊ะ",
+        targetScreen: '/table',
         allowedRoles: [1, 2], 
       ),
     ];

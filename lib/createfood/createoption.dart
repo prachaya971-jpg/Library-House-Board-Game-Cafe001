@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cafa_boardgame/config/app_config.dart';
+import 'package:cafa_boardgame/utils/appapi.dart';
 
 class CreateOptionPage extends StatefulWidget {
   const CreateOptionPage({super.key});
@@ -17,16 +18,22 @@ class CreateOptionPage extends StatefulWidget {
 class _CreateOptionPageState extends State<CreateOptionPage> {
   final TextEditingController _optionNameController = TextEditingController();
   final TextEditingController _optionPriceController = TextEditingController();
-  
+  List<dynamic> _foodStatusList = [];
   
   XFile? _pickedXFile;
   Uint8List? _imageBytes;
   
   bool _isSubmitting = false;
-
+  String? _selectedFoodStatusId;
   final ImagePicker _picker = ImagePicker();
 
-  //  เลือกรูปภาพ
+  @override
+  void initState() {
+    super.initState();
+    _fetchstatus(); 
+  }
+
+  // เลือกรูปภาพ
   Future<void> _pickImage() async {
     final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
@@ -35,6 +42,22 @@ class _CreateOptionPageState extends State<CreateOptionPage> {
         _pickedXFile = pickedFile;
         _imageBytes = bytes;
       });
+    }
+  }
+
+  Future<void> _fetchstatus() async {
+    try {
+      final response = await AppAPI.get('/food/food-status');
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        if (json['isError'] == false && json['data'] != null) {
+          setState(() {
+            _foodStatusList = List.from(json['data']);
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching food status: $e");
     }
   }
 
@@ -60,6 +83,13 @@ class _CreateOptionPageState extends State<CreateOptionPage> {
     if (price == null || price < 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('กรุณากรอกราคาให้ถูกต้อง')),
+      );
+      return;
+    }
+
+    if (_selectedFoodStatusId == null || _selectedFoodStatusId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('กรุณาเลือกสถานะอาหาร')),
       );
       return;
     }
@@ -106,6 +136,7 @@ class _CreateOptionPageState extends State<CreateOptionPage> {
       }
 
       request.fields['option_name'] = optionName;
+      request.fields['food_status_id'] = _selectedFoodStatusId!;
       request.fields['option_price'] = price.toString();
 
       if (_imageBytes != null && _pickedXFile != null) {
@@ -130,6 +161,7 @@ class _CreateOptionPageState extends State<CreateOptionPage> {
           _optionNameController.clear();
           _optionPriceController.clear();
           setState(() {
+            _selectedFoodStatusId = null; 
             _pickedXFile = null;
             _imageBytes = null;
           });
@@ -144,7 +176,7 @@ class _CreateOptionPageState extends State<CreateOptionPage> {
         }
       }
     } catch (e) {
-      print("Error creating option: $e");
+      debugPrint("Error creating option: $e");
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -214,6 +246,30 @@ class _CreateOptionPageState extends State<CreateOptionPage> {
             ),
           ),
           const SizedBox(height: 16),
+
+          const Text(
+            'สถานะอาหาร',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: primary),
+          ),
+          const SizedBox(height: 6),
+          DropdownButtonFormField<String>(
+            value: _selectedFoodStatusId,
+            hint: const Text('เลือกสถานะอาหาร'),
+            decoration: InputDecoration(
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+            items: _foodStatusList.map<DropdownMenuItem<String>>((item) {
+              return DropdownMenuItem<String>(
+                value: item['food_status_id']?.toString() ?? '',
+                child: Text(item['food_status_name']?.toString() ?? ''),
+              );
+            }).toList(),
+            onChanged: (newValue) {
+              setState(() => _selectedFoodStatusId = newValue);
+            },
+          ),
+          const SizedBox(height: 20),
 
           const Text(
             'รูปประกอบ (ถ้ามี)',

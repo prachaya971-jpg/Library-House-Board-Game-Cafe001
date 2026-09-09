@@ -58,16 +58,25 @@ class _OrderraelScreenState extends State<OrderraelScreen> {
     }
   }
 
-  Future<void> _markAsServed(int orderDetailId, String foodName) async {
+  Future<void> _markAsServed(
+    int orderDetailId,
+    String orderstatusid,
+    String foodName,
+    String orderstatusname,
+  ) async {
     final messenger = ScaffoldMessenger.of(context);
-
-    // 1. รอรับค่าจากการกดปุ่มใน Dialog (คืนค่า true เมื่อกดเสิร์ฟสำเร็จ, false/null เมื่อกดยกเลิก)
+    String orderstatus;
+    if (orderstatusid == 'N') {
+      orderstatus = "รับออเดอร์";
+    } else {
+      orderstatus = "เสิร์ฟเเล้ว";
+    }
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text("ยืนยันการเสิร์ฟ"),
         content: Text(
-          'ต้องการเปลี่ยนสถานะ "$foodName" เป็นเสิร์ฟแล้วใช่หรือไม่?',
+          'ต้องการเปลี่ยนสถานะ "$foodName" เป็น"$orderstatus"ใช่หรือไม่?',
         ),
         actions: [
           TextButton(
@@ -93,6 +102,7 @@ class _OrderraelScreenState extends State<OrderraelScreen> {
       try {
         final response = await AppAPI.post('/order/update-order-server', {
           'orderDetailId': orderDetailId,
+          'orderstatus': orderstatusid,
         });
 
         final jsonRes = jsonDecode(response.body);
@@ -225,6 +235,8 @@ class _OrderraelScreenState extends State<OrderraelScreen> {
     final String foodName = item['food_name']?.toString() ?? '';
     final String? variantName = item['variant_name']?.toString();
     final String? optionName = item['option_name']?.toString();
+    final String? statusName = item['serve_status_name']?.toString();
+    final String? statusid = item['serve_status_id']?.toString();
     final int quantity = int.tryParse(item['quantity']?.toString() ?? '1') ?? 1;
     final double totalPrice =
         num.tryParse(item['total_price']?.toString() ?? '0')?.toDouble() ?? 0.0;
@@ -375,18 +387,28 @@ class _OrderraelScreenState extends State<OrderraelScreen> {
                 ],
               ),
               ElevatedButton.icon(
-                onPressed: () =>
-                    _markAsServed(item['order_detail_id'], foodName),
-                icon: const Icon(Icons.check, size: 16, color: Colors.white),
-                label: const Text(
-                  'เสิร์ฟ',
-                  style: TextStyle(
+                onPressed: () => _markAsServed(
+                  item['order_detail_id'],
+                  item['serve_status_id'],
+                  foodName,
+                  item['serve_status_name'],
+                ),
+                icon: Icon(
+                  statusid == 'N' ? Icons.outdoor_grill_outlined : Icons.check,
+                  size: 16,
+                  color: Colors.white,
+                ),
+                label: Text(
+                  '$statusName',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF51A742),
+                  backgroundColor: statusid == 'N'
+                      ? const Color.fromARGB(255, 203, 31, 31)
+                      : const Color.fromARGB(255, 45, 155, 28),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 8,

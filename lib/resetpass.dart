@@ -1,196 +1,111 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:http/http.dart' as http;
+import 'package:cafa_boardgame/utils/appapi.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
-import 'package:cafa_boardgame/config/app_config.dart';
-import 'package:cafa_boardgame/utils/date_util.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:intl/intl.dart';
-import 'package:http/http.dart' as http;
-//import 'employeemoule/orders.dart';
-import 'package:jwt_decoder/jwt_decoder.dart';
-import 'package:cafa_boardgame/home.dart';
-import 'resetpass.dart';
-class Login extends StatefulWidget {
-  const Login({super.key});
+
+
+class ResetPass extends StatefulWidget {
+  const ResetPass({super.key});
 
   @override
-  _LoginState createState() => _LoginState();
+  _ResetPassState createState() => _ResetPassState();
 }
 
-class _LoginState extends State<Login> {
+class _ResetPassState extends State<ResetPass> {
+  final TextEditingController _newPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final _formkey = GlobalKey<FormState>();
-  final _useridValueController = TextEditingController();
-  final _passwordValueController = TextEditingController();
 
-  Future<(bool, String, String)> _authenRequest() async {
-    String empid = _useridValueController.text;
-    DateTime now = DateTime.now();
-    String formattedDateString = DateUtil().getFormattedDate(now);
+  @override
+  void dispose() {
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
 
-    String comdinedSring = "$empid&$formattedDateString";
-    print(comdinedSring);
-
-    String _authenRequestStrig = sha256
-        .convert(utf8.encode(comdinedSring))
-        .toString();
-
-    print(_authenRequestStrig);
-
-    final response = await http.post(
-      Uri.parse("${AppConfig.apiBaseUri}/authen/authen_request"),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-      body: jsonEncode(<String, String>{'authen_request': _authenRequestStrig}),
-    );
-
-    final json = jsonDecode(response.body);
-  print(json);
-
-  
-  bool isError = json["isError"] is bool ? json["isError"] as bool : true;
-  String data = json["data"] is String ? json["data"] as String : "";
-  
-  
-  String errorMessage = "";
-  if (json["errorMessage"] != null) {
-    errorMessage = json["errorMessage"] as String;
-  } else if (json["errorMassage"] != null) {
-    errorMessage = json["errorMassage"] as String;
-  } else {
-    errorMessage = "ไม่พบข้อมูลผู้ใช้ในระบบ หรือบัญชีถูกระงับการใช้งาน";
+    super.dispose();
   }
 
-  return (isError, data, errorMessage);
-}
-
-  Future<({bool isError, String data, String errorMessage})> _accessRequest(
-    String authenToken,
-  ) async {
-  String empid = _useridValueController.text;
-    String password = _passwordValueController.text;
-    
-    
-    String passwordEncode = sha256.convert(utf8.encode(password)).toString();
-    
-    
-    String combinedString = "$empid&$passwordEncode&$authenToken";
-    String authenSignature = sha256.convert(utf8.encode(combinedString)).toString();
-
-    final response = await http.post(
-      Uri.parse("${AppConfig.apiBaseUri}/authen/access_request"),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-      body: jsonEncode(<String, String>{
-        'authen_signature': authenSignature, 
-        'authen_token': authenToken,
-      }),
-    );
-
-    final json = jsonDecode(response.body);
-    print("Access Request Response: $json");
-
-    if (!json["isError"]) {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', json["data"]["access_token"]);
-      await prefs.setString('user_id', _useridValueController.text);
-
-      return (
-        isError: false,
-        data: json["data"]["access_token"] as String,
-        errorMessage: "",
-      );
+ Future<bool> _resetPassword(String newPassword, int empId) async {
+  try {
+    final response = await AppAPI.post('/emp/reset-password-status', {
+      'emp_id': empId,
+      'new_password': newPassword,
+    });
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      print("เปลี่ยนรหัสผ่านไม่สำเร็จ: ${response.body}");
+      return false;
     }
-
-    
-    return (
-      isError: true,
-      data: "",
-      errorMessage: json["errorMessage"] is String
-          ? json["errorMessage"] as String
-          : "รหัสผ่านไม่ถูกต้อง",
-    );
+  } catch (e) {
+    print("เกิดข้อผิดพลาด: $e");
+    return false;
   }
-
-  void _doLogin(BuildContext context) async {
-  BuildContext? dialogContext;
-
+}
+ void _doLogin(BuildContext context) async {
   showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (ctx) {
-      dialogContext = ctx;
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.amber),
-      );
-    },
+    builder: (ctx) => const Center(
+      child: CircularProgressIndicator(color: Colors.amber),
+    ),
   );
+   
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+    final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
+    final String empId = decodedToken['emp_id']?.toString() ?? '';
+    final newPassword = _newPasswordController.text.trim();
+    final newpasswordHash = sha256.convert(utf8.encode(newPassword)).toString();
+    
+    final bool isSuccess = await _resetPassword(newpasswordHash, int.parse(empId));
 
-  var (isError1, authenToken, errorMessage1) = await _authenRequest();
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop(); 
 
-  if (isError1) {
-    if (dialogContext != null && Navigator.canPop(dialogContext!)) {
-      Navigator.pop(dialogContext!);
+    if (isSuccess) {
+      _showsuccessDialog(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('เปลี่ยนรหัสผ่านไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')),
+      );
     }
-    if (mounted) _showErrorDialog(context, errorMessage1);
-    return;
-  }
 
-  var result = await _accessRequest(authenToken);
-
-  if (dialogContext != null && Navigator.canPop(dialogContext!)) {
-    Navigator.pop(dialogContext!);
-  }
-
-  if (!mounted) return;
-
-  if (result.isError) {
-    _showErrorDialog(context, result.errorMessage);
-    return; 
-  }
-
-  final Map<String, dynamic> decodedToken = JwtDecoder.decode(result.data);
-  final String passwordStatus = decodedToken['password_status_id']?.toString() ?? 'Y';
-
-  if (passwordStatus == 'N') {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ResetPass(),
-      ),
+  } catch (e) {
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
     );
-  }else {
-    Navigator.pushReplacementNamed(context, '/home');
   }
 }
 
-  void _showErrorDialog(BuildContext context, String message) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("เข้าสู่ระบบไม่สำเร็จ"),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("ตกลง"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  
-  @override
-  void dispose() {
-    _useridValueController.dispose();
-    _passwordValueController.dispose();
-    super.dispose();
-  }
+void _showsuccessDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogCtx) {
+      return AlertDialog(
+        title: const Text("ยืนยันการเปลี่ยนรหัสผ่าน"),
+        content: const Text("ดำเนินการสำเร็จเรียบร้อยแล้ว"),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              Navigator.pushReplacementNamed(context, '/home');
+            },
+            child: const Text("ตกลง"),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -210,7 +125,7 @@ class _LoginState extends State<Login> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                "Library House Board Game Cafe",
+                "เปลี่ยนรหัสผ่าน",
                 style: GoogleFonts.lato(
                   textStyle: const TextStyle(
                     color: Color.fromARGB(255, 0, 0, 0),
@@ -242,17 +157,18 @@ class _LoginState extends State<Login> {
                         margin: const EdgeInsets.only(top: 50),
                         padding: const EdgeInsets.symmetric(horizontal: 30),
                         child: TextFormField(
-                          controller: _useridValueController,
+                          controller: _newPasswordController,
+                          obscureText: true,
                           style: const TextStyle(
                             color: Color.fromARGB(255, 0, 0, 0),
                           ),
                           decoration: const InputDecoration(
                             prefixIcon: Icon(
-                              Icons.person_outline,
+                              Icons.vpn_key_outlined,
                               color: Color.fromARGB(136, 0, 0, 0),
                             ),
 
-                            hintText: "หมายเลขพนักงาน",
+                            hintText: "รหัสผ่านใหม่",
                             hintStyle: TextStyle(
                               color: Color.fromARGB(100, 0, 0, 0),
                             ),
@@ -271,7 +187,14 @@ class _LoginState extends State<Login> {
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return "กรุณากรอกหมายเลขพนักงานของคุณ";
+                              return "กรุณากรอกรหัสผ่านใหม่";
+                            }
+                            if (value.trim().length < 10) {
+                              return "รหัสผ่านต้องมีความยาวอย่างน้อย 10 ตัวอักษร";
+                            }
+                            final englishLettersCount = RegExp(r'[a-zA-Z]').allMatches(value.trim()).length;
+                            if (englishLettersCount < 3) {
+                              return "รหัสผ่านต้องมีตัวอักษรภาษาอังกฤษอย่างน้อย 3 ตัว";
                             }
                             return null;
                           },
@@ -283,17 +206,17 @@ class _LoginState extends State<Login> {
                         padding: const EdgeInsets.symmetric(horizontal: 30),
                         child: TextFormField(
                           obscureText: true,
-                          controller: _passwordValueController,
+                          controller: _confirmPasswordController,
                           style: const TextStyle(
                             color: Color.fromARGB(255, 0, 0, 0),
                           ),
                           decoration: const InputDecoration(
                             prefixIcon: Icon(
-                              Icons.lock_outline,
+                              Icons.vpn_key_outlined,
                               color: Color.fromARGB(137, 0, 0, 0),
                             ),
 
-                            hintText: "Password",
+                            hintText: "ยืนยันรหัสผ่าน",
                             hintStyle: TextStyle(
                               color: Color.fromARGB(100, 0, 0, 0),
                             ),
@@ -312,7 +235,11 @@ class _LoginState extends State<Login> {
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return "กรุณากรอกรหัสผ่านของคุณ";
+                              return "กรุณากรอกยืนยันรหัสผ่าน";
+                            }
+                            if (value.trim() !=
+                                _newPasswordController.text.trim()) {
+                              return "รหัสผ่านไม่ตรงกัน";
                             }
                             return null;
                           },

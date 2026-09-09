@@ -22,7 +22,8 @@ class _ListOptionsState extends State<ListOptions> {
   bool _isLoading = false;
   final TextEditingController _searchController = TextEditingController();
   List<dynamic> _optionsList = [];
-    List<dynamic> _filteredoptionsList = [];
+  List<dynamic> _filteredoptionsList = [];
+  List<dynamic> _foodStatusList = [];
   int _currentRoleId = 2;
 
   @override
@@ -30,22 +31,53 @@ class _ListOptionsState extends State<ListOptions> {
     super.initState();
     _loadRole();
     _fetchOptions();
+    _fetchstatus();
   }
 
+  Color getStatusColor(String statusId) {
+    switch (statusId.toUpperCase()) {
+      case 'N':
+        return Colors.red.shade600; 
+      case 'Y':
+        return Colors.green.shade600; 
+      case 'A':
+        return Colors.amber.shade700; 
+      default:
+        return Colors.grey.shade600;
+    }
+  }
 
-void _filteroption(String query) {
+  Future<void> _fetchstatus() async {
+    try {
+      final response = await AppAPI.get('/food/food-status');
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        if (json['isError'] == false && json['data'] != null) {
+          setState(() {
+            _foodStatusList = List.from(json['data']);
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching food status: $e");
+    }
+  }
+
+  void _filteroption(String query) {
     setState(() {
       if (query.trim().isEmpty) {
         _filteredoptionsList = List.from(_optionsList);
       } else {
         _filteredoptionsList = _optionsList.where((option) {
-          final optionName = option['option_name']?.toString().toLowerCase() ?? '';
+          final optionName =
+              option['option_name']?.toString().toLowerCase() ?? '';
           final searchLower = query.toLowerCase();
           return optionName.contains(searchLower);
         }).toList();
       }
     });
   }
+
   // ดึงข้อมูล Role จาก Token
   Future<void> _loadRole() async {
     if (widget.roleId != null) {
@@ -76,7 +108,7 @@ void _filteroption(String query) {
         if (!json['isError']) {
           setState(() {
             _optionsList = json['data'] ?? [];
-             _filteredoptionsList = List.from(_optionsList);
+            _filteredoptionsList = List.from(_optionsList);
           });
         }
       } else {
@@ -91,7 +123,6 @@ void _filteroption(String query) {
 
   // 2. แสดง Dialog แก้ไขรายการ Option
   Future<void> _showEditDialog(Map<String, dynamic> item) async {
-    //  แก้ไข: เปลี่ยนจาก 'option_id' เป็น 'options_id' ให้ตรงกับ DB
     final int optionId = item['options_id'] ?? item['option_id'] ?? 0;
     final TextEditingController nameController = TextEditingController(
       text: item['option_name'] ?? '',
@@ -315,7 +346,7 @@ void _filteroption(String query) {
 
   // 3. แสดง Dialog ยืนยันการลบ Option
   Future<void> _showDeleteDialog(Map<String, dynamic> item) async {
-    final int optionId = item['options_id'] ?? item['option_id'] ?? 0;
+    final int optionId = item['options_id'];
     final String optionName = item['option_name'] ?? '';
 
     final bool? confirm = await showDialog<bool>(
@@ -352,28 +383,181 @@ void _filteroption(String query) {
       });
 
       final jsonRes = jsonDecode(response.body);
-      if (response.statusCode == 200 && !jsonRes['isError']) {
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('ลบข้อมูลสำเร็จ')));
-        }
-        _fetchOptions(); // โหลดรายการใหม่
+      if (!mounted) return;
+
+      if (response.statusCode == 200 && jsonRes['isError'] == false) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('ลบข้อมูลสำเร็จ'),
+            backgroundColor: Colors.black,
+          ),
+        );
+        _fetchOptions();
       } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'เกิดข้อผิดพลาด: ${jsonRes['errorMessage'] ?? 'ไม่สามารถลบได้'}',
-              ),
-            ),
-          );
+        String rawError = jsonRes['errorMessage']?.toString() ?? '';
+        String displayError = 'เกิดข้อผิดพลาด: $rawError';
+        if (rawError.contains('1451') ||
+            rawError.contains('foreign key constraint fails') ||
+            rawError.contains('ER_ROW_IS_REFERENCED')) {
+          displayError = 'ไม่สามารถลบได้ เนื่องจากมีการดำเนินการรายการนี้แล้ว';
         }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(displayError),
+            backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+          ),
+        );
       }
     } catch (e) {
-      print("Error deleting option: $e");
+      debugPrint("Error deleting food: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อ: $e'),
+            backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+          ),
+        );
+      }
     }
   }
+
+
+Future<void> _showStatusDropdownDialog(Map<String, dynamic> item) async {
+  final String optionName = item['option_name']?.toString() ?? '';
+  
+  final currentStatusId = item['food_status_id']?.toString();
+  final bool hasMatch = _foodStatusList.any(
+    (status) => status['food_status_id']?.toString() == currentStatusId,
+  );
+  
+  String? selectedStatusId = hasMatch ? currentStatusId : null;
+
+  await showDialog(
+    context: context,
+    builder: (dialogContext) {
+      return StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            title: Text(
+              'แก้ไขสถานะ: $optionName',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            content: SizedBox(
+              width: 320,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('เลือกสถานะสินค้า', style: TextStyle(fontSize: 14)),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: selectedStatusId,
+                    hint: const Text('เลือกสถานะ'),
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                    items: _foodStatusList.map<DropdownMenuItem<String>>((status) {
+                      final statusId = status['food_status_id']?.toString() ?? '';
+                      final statusName = status['food_status_name']?.toString() ?? '';
+                      return DropdownMenuItem<String>(
+                        value: statusId,
+                        child: Text(
+                          statusName,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      setDialogState(() => selectedStatusId = val);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('ยกเลิก', style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 81, 167, 66),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: selectedStatusId == null
+                    ? null
+                    : () {
+                        Navigator.pop(dialogContext);
+                        _updateOptionStatus(item, selectedStatusId!);
+                      },
+                child: const Text('บันทึก'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+Future<void> _updateOptionStatus(Map<String, dynamic> item, String newStatusId) async {
+  final int optionId = item['options_id'] ?? item['option_id'] ?? 0;
+
+  setState(() => _isLoading = true);
+
+  try {
+    final response = await AppAPI.post(
+      '/food/update-option-status',
+      {
+        'options_id': optionId,
+        'food_status_id': newStatusId,
+      },
+    );
+
+    final jsonRes = jsonDecode(response.body);
+
+    if (response.statusCode == 200 && jsonRes['isError'] == false) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('อัปเดตสถานะสำเร็จ'),
+            backgroundColor: Color.fromARGB(255, 2, 2, 2),
+          ),
+        );
+        _fetchOptions();
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('เกิดข้อผิดพลาด: ${jsonRes['errorMessage'] ?? 'ไม่สามารถอัปเดตสถานะได้'}'),
+            backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+          ),
+        );
+      }
+    }
+  } catch (e) {
+    debugPrint("Error updating option status: $e");
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อ: $e'),
+          backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+        ),
+      );
+    }
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
+  }
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -409,7 +593,7 @@ void _filteroption(String query) {
                 ),
               ),
               const SizedBox(width: 16),
-               Expanded(
+              Expanded(
                 child: Container(
                   height: 42,
                   constraints: const BoxConstraints(maxWidth: 320),
@@ -417,10 +601,18 @@ void _filteroption(String query) {
                     controller: _searchController,
                     decoration: InputDecoration(
                       hintText: 'ค้นหาชื่อท้อปปิ้ง...',
-                      prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 20),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: Colors.grey,
+                        size: 20,
+                      ),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                              icon: const Icon(
+                                Icons.clear,
+                                size: 18,
+                                color: Colors.grey,
+                              ),
                               onPressed: () {
                                 _searchController.clear();
                                 _filteroption('');
@@ -429,7 +621,10 @@ void _filteroption(String query) {
                           : null,
                       filled: true,
                       fillColor: Colors.grey.shade100,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 0,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide(color: Colors.grey.shade300),
@@ -440,7 +635,10 @@ void _filteroption(String query) {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Colors.blue, width: 1.5),
+                        borderSide: const BorderSide(
+                          color: Colors.blue,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                     onChanged: (value) {
@@ -483,6 +681,9 @@ void _filteroption(String query) {
                         num.tryParse(item['option_price']?.toString() ?? '0') ??
                         0;
                     final String? imgName = item['options_img'];
+                    final String food_status_name =
+                        item['food_status_name'] ?? '';
+                    final String food_status_id = item['food_status_id'] ?? '';
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 10),
@@ -510,12 +711,48 @@ void _filteroption(String query) {
                                 )
                               : _buildDefaultAvatar(index),
                         ),
-                        title: Text(
-                          optionName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
+                        title: Row(
+                          children: [
+                            // 1. ชื่อท็อปปิ้ง
+                            Expanded(
+                              child: Text(
+                                optionName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: Colors.black87,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: getStatusColor(
+                                  food_status_id,
+                                ).withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: getStatusColor(
+                                    food_status_id,
+                                  ).withOpacity(0.5),
+                                ),
+                              ),
+                              child: Text(
+                                food_status_name,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: getStatusColor(food_status_id),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         subtitle: Text(
                           '+฿${optionPrice.toStringAsFixed(0)}',
@@ -545,9 +782,31 @@ void _filteroption(String query) {
                                     onPressed: () => _showDeleteDialog(item),
                                     tooltip: 'ลบ',
                                   ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.change_circle_outlined,
+                                      color: Color.fromARGB(255, 95, 93, 91),
+                                    ),
+                                    onPressed: () =>
+                                        _showStatusDropdownDialog(item),
+                                    tooltip: 'เปลี่ยนสถานะ',
+                                  ),
                                 ],
                               )
-                            : null,
+                            : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.change_circle_outlined,
+                                      color: Color.fromARGB(255, 95, 93, 91),
+                                    ),
+                                    onPressed: () =>
+                                        _showStatusDropdownDialog(item),
+                                    tooltip: 'เปลี่ยนสถานะ',
+                                  ),
+                                ],
+                              ),
                       ),
                     );
                   },
