@@ -3,20 +3,24 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:cafa_boardgame/utils/appapi.dart';
+import 'package:cafa_boardgame/config/app_config.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+// import 'package:flutter/services.dart';
 
 class ReportBoardgameforborrow extends StatefulWidget {
-  final int? roleId; 
+  final int? roleId;
 
   const ReportBoardgameforborrow({super.key, this.roleId});
 
   @override
-  State<ReportBoardgameforborrow> createState() => _ReportBoardgameforborrowState();
+  State<ReportBoardgameforborrow> createState() =>
+      _ReportBoardgameforborrowState();
 }
 
 class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
   bool _isLoading = false;
   List<dynamic> _bgborrowList = [];
-  int _currentRoleId = 2; 
+  int _currentRoleId = 2;
 
   final TextEditingController _searchController = TextEditingController();
   List<dynamic> _filteredboardgameborrow = [];
@@ -34,13 +38,27 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
         _filteredboardgameborrow = List.from(_bgborrowList);
       } else {
         _filteredboardgameborrow = _bgborrowList.where((bgborrow) {
-          final bgborrowName = bgborrow['bgp_name']?.toString().toLowerCase() ?? '';
+          final bgborrowName =
+              bgborrow['bgp_name']?.toString().toLowerCase() ?? '';
           final searchLower = query.toLowerCase();
           return bgborrowName.contains(searchLower);
         }).toList();
       }
     });
   }
+
+  //คำสั่งสร้าง Qrcode
+Widget buildQrCode(dynamic qr) {
+  final String qrdata = qr.toString();
+
+  return QrImageView(
+    data: qrdata,                   
+    version: QrVersions.auto,       
+    size: 200.0,                    
+    backgroundColor: Colors.white,  
+    errorCorrectionLevel: QrErrorCorrectLevel.M, 
+  );
+}
 
   Future<void> _loadRole() async {
     if (widget.roleId != null) {
@@ -60,6 +78,209 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
       }
     }
   }
+
+  // function แสดงข้อมูลของปุ่มแสดงรายละเอียด
+  void _showDetailDialog(Map<String, dynamic> item) {
+    final String? imgName = item['img_game_play'] ?? item['borrow_img'];
+
+    final String imagepath = imgName != null && imgName.isNotEmpty
+        ? '${AppConfig.apiBaseUri.replaceAll('/api', '')}/img/borrow/$imgName'
+        : '';
+
+    final String qrcodedata = item['bgp_id'].toString();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            width: 500,
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'รายละเอียดบอร์ดเกม',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+                const Divider(),
+                // const SizedBox(height: 200),
+                Center(
+                  child: Container(
+                    width: 200,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: imgName != null && imgName.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              imagepath,
+                              fit: BoxFit.cover,
+                              loadingBuilder:
+                                  (
+                                    BuildContext context,
+                                    Widget child,
+                                    ImageChunkEvent? loadingProgress,
+                                  ) {
+                                    if (loadingProgress == null) return child;
+                                    return Center(
+                                      child: CircularProgressIndicator(
+                                        value:
+                                            loadingProgress
+                                                    .expectedTotalBytes !=
+                                                null
+                                            ? loadingProgress
+                                                      .cumulativeBytesLoaded /
+                                                  loadingProgress
+                                                      .expectedTotalBytes!
+                                            : null,
+                                      ),
+                                    );
+                                  },
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Center(
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    size: 48,
+                                    color: Colors.grey,
+                                  ),
+                                );
+                              },
+                            ),
+                          )
+                        : const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.image_not_supported,
+                                size: 48,
+                                color: Colors.grey,
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'ไม่มีรูปภาพ',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+                const SizedBox(
+                  height: 20,
+                ),
+                // ข้อความ
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ชื่อบอร์ดเกม/ชื่อประเภท
+                    Text(
+                      item['bgp_name'] ??
+                          item['bgborrow_name'] ??
+                          'ไม่มีชื่อรายการ',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2D3748),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // id
+                    Row(
+                      children: [
+                        const Text(
+                          'เราต้องมี id มั้ย: ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        Text(
+                          '${item['bgp_id']}',
+                          style: const TextStyle(color: Colors.black87),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+
+                    // จำนวน
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'จำนวนที่มี: ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                                item['quantity'] .toString(),
+                            style: const TextStyle(color: Colors.black87),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // ประเภท
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'ประเภท: ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            item['catagorylist'] ??
+                                'แกเป็นตัวอะไรเนี่ย',
+                            style: const TextStyle(color: Colors.black87),
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                  ],
+                ),
+                buildQrCode([qrcodedata])
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+
 
   Future<void> _fetchTypes() async {
     setState(() => _isLoading = true);
@@ -92,7 +313,7 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
 
     final bool? confirm = await showDialog<bool>(
       context: context,
-      builder: (context) { 
+      builder: (context) {
         return AlertDialog(
           title: const Text('แก้ไขชื่อประเภท'),
           content: TextField(
@@ -114,7 +335,10 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
                 backgroundColor: const Color(0xFFD49A32),
               ),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('บันทึก', style: TextStyle(color: Colors.white)),
+              child: const Text(
+                'บันทึก',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         );
@@ -129,10 +353,9 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
     }
   }
 
-  // ส่ง API แก้ไขข้อมูล
+  // ส่ง API แก้ไขข้อมูล (ยังไม่แก้ รอทำ database ให้เสร็จก่อน)
   Future<void> _updateType(int id, String newName) async {
     try {
-      
       final response = await AppAPI.post('/boardgame/update-type', {
         'boardgame_type_id': id,
         'bgp_name': newName,
@@ -141,15 +364,19 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
       final jsonRes = jsonDecode(response.body);
       if (response.statusCode == 200 && !jsonRes['isError']) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('แก้ไขข้อมูลสำเร็จ')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('แก้ไขข้อมูลสำเร็จ')));
         }
-        _fetchTypes(); 
+        _fetchTypes();
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('เกิดข้อผิดพลาด: ${jsonRes['errorMessage'] ?? 'ไม่สามารถแก้ไขได้'}')),
+            SnackBar(
+              content: Text(
+                'เกิดข้อผิดพลาด: ${jsonRes['errorMessage'] ?? 'ไม่สามารถแก้ไขได้'}',
+              ),
+            ),
           );
         }
       }
@@ -175,9 +402,7 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
               child: const Text('ยกเลิก', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.pop(context, true),
               child: const Text('ลบ', style: TextStyle(color: Colors.white)),
             ),
@@ -196,21 +421,24 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
     try {
       final response = await AppAPI.post('/boardgame/delete-bgborrow', {
         'bgp_id': id,
-      
       });
 
       final jsonRes = jsonDecode(response.body);
       if (response.statusCode == 200 && !jsonRes['isError']) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('ลบข้อมูลสำเร็จ')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('ลบข้อมูลสำเร็จ')));
         }
-        _fetchTypes(); 
+        _fetchTypes();
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('เกิดข้อผิดพลาด: ${jsonRes['errorMessage'] ?? 'ไม่สามารถลบได้'}')),
+            SnackBar(
+              content: Text(
+                'เกิดข้อผิดพลาด: ${jsonRes['errorMessage'] ?? 'ไม่สามารถลบได้'}',
+              ),
+            ),
           );
         }
       }
@@ -252,8 +480,8 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
                   color: Color(0xFF2D3748),
                 ),
               ),
-               const SizedBox(width: 16),
-            
+              const SizedBox(width: 16),
+
               Expanded(
                 child: Container(
                   height: 42,
@@ -262,10 +490,18 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
                     controller: _searchController,
                     decoration: InputDecoration(
                       hintText: 'ค้นหาชื่อประเภทบอร์ดเกม...',
-                      prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 20),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: Colors.grey,
+                        size: 20,
+                      ),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                              icon: const Icon(
+                                Icons.clear,
+                                size: 18,
+                                color: Colors.grey,
+                              ),
                               onPressed: () {
                                 _searchController.clear();
                                 _filterboardgameborrow('');
@@ -274,7 +510,10 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
                           : null,
                       filled: true,
                       fillColor: Colors.grey.shade100,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 0,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide(color: Colors.grey.shade300),
@@ -285,7 +524,10 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Colors.blue, width: 1.5),
+                        borderSide: const BorderSide(
+                          color: Colors.blue,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                     onChanged: (value) {
@@ -308,82 +550,142 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
 
           // รายการข้อมูล
           _isLoading
-          
               ? const Padding(
                   padding: EdgeInsets.all(32.0),
                   child: Center(child: CircularProgressIndicator()),
                 )
               : _bgborrowList.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: Center(child: Text('ไม่พบรายการบอร์ดเกม')),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _filteredboardgameborrow.length,
-                      itemBuilder: (context, index) {
-                        final item = _filteredboardgameborrow[index];
-                        final String typeName = item['bgp_name'] ??
-                            // item['type_name'] ??
-                            '';
+              ? const Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Center(child: Text('ไม่พบรายการบอร์ดเกม')),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _filteredboardgameborrow.length,
+                  itemBuilder: (context, index) {
+                    final item = _filteredboardgameborrow[index];
+                    final String typeName =
+                        item['bgp_name'] ??
+                        // item['img_game_play'] ??
+                        '';
+                    final String? imgicon =
+                        item['img_game_play'] ;
 
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          elevation: 0,
-                          color: const Color(0xFFF8F9FA),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            side: BorderSide(color: Colors.grey.shade200),
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      elevation: 0,
+                      color: const Color(0xFFF8F9FA),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: imgicon != null && imgicon.isNotEmpty
+                              ? Image.network(
+                                  '${AppConfig.apiBaseUri.replaceAll('/api', '')}/img/borrow/$imgicon',
+                                  width: 48,
+                                  height: 48,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      _buildDefaultAvatar(index),
+                                )
+                              : _buildDefaultAvatar(index),
+                        ),
+                        title: Text(
+                          typeName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
                           ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 4,
-                            ),
-                            leading: CircleAvatar(
-                              backgroundColor: Colors.amber.shade100,
-                              child: Text(
-                                '${index + 1}',
-                                style: const TextStyle(
-                                  color: Color(0xFFD49A32),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            title: Text(
-                              typeName,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                            trailing: isManager
-                                ? Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.edit,
-                                            color: Colors.orange),
-                                        onPressed: () => _showEditDialog(item),
-                                        tooltip: 'แก้ไข',
+                        ),
+                        trailing: isManager
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: ElevatedButton(
+                                      onPressed: () => _showDetailDialog(item),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color.fromARGB(
+                                          255,
+                                          210,
+                                          222,
+                                          208,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 36,
+                                          vertical: 12,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          side: const BorderSide(
+                                            color: Color.fromARGB(
+                                              255,
+                                              46,
+                                              46,
+                                              46,
+                                            ),
+                                            width: 1,
+                                          ),
+                                        ),
                                       ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete,
-                                            color: Colors.red),
-                                        onPressed: () =>
-                                            _showDeleteDialog(item),
-                                        tooltip: 'ลบ',
+                                      child: const Text(
+                                        'ดูรายละเอียด',
+                                        style: TextStyle(
+                                          color: Color.fromARGB(255, 5, 5, 5),
+                                          fontSize: 16,
+                                        ),
                                       ),
-                                    ],
-                                  )
-                                : null,
-                          ),
-                        );
-                      },
-                    ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.edit,
+                                      color: Colors.orange,
+                                    ),
+                                    onPressed: () => _showEditDialog(item),
+                                    tooltip: 'แก้ไข',
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () => _showDeleteDialog(item),
+                                    tooltip: 'ลบ',
+                                  ),
+                                ],
+                              )
+                            : null,
+                      ),
+                    );
+                  },
+                ),
         ],
       ),
     );
   }
+  Widget _buildDefaultAvatar(int index) {
+    return CircleAvatar(
+      backgroundColor: Colors.amber.shade100,
+      child: Text(
+        '${index + 1}',
+        style: const TextStyle(
+          color: Color(0xFFD49A32),
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
 }
+

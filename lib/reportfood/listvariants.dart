@@ -15,7 +15,9 @@ class ListVariants extends StatefulWidget {
 
 class _ListVariantsState extends State<ListVariants> {
   bool _isLoading = false;
+  final TextEditingController _searchController = TextEditingController();
   List<dynamic> _variantsList = [];
+  List<dynamic> _variantsFoodList = [];
   int _currentRoleId = 2; 
 
   @override
@@ -25,6 +27,21 @@ class _ListVariantsState extends State<ListVariants> {
     _fetchVariants();
   }
 
+  
+ void _filterVariant(String query) {
+  setState(() {
+    final searchLower = query.trim().toLowerCase();
+    
+    if (searchLower.isEmpty) {
+      _variantsFoodList = List.from(_variantsList);
+    } else {
+      _variantsFoodList = _variantsList.where((food) {
+        final variantName = (food['variant_name'] ?? '').toString().toLowerCase();
+        return variantName.contains(searchLower);
+      }).toList();
+    }
+  });
+}
   
   Future<void> _loadRole() async {
     if (widget.roleId != null) {
@@ -54,6 +71,7 @@ class _ListVariantsState extends State<ListVariants> {
         if (!json['isError']) {
           setState(() {
             _variantsList = json['data'] ?? [];
+            _variantsFoodList = List.from(_variantsList); 
           });
         }
       } else {
@@ -234,6 +252,49 @@ class _ListVariantsState extends State<ListVariants> {
                   color: Color(0xFF2D3748),
                 ),
               ),
+              const SizedBox(width: 16),
+            
+              Expanded(
+                child: Container(
+                  height: 42,
+                  constraints: const BoxConstraints(maxWidth: 320),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'ค้นหาชื่อรูปเเบบ...',
+                      prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 20),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                              onPressed: () {
+                                _searchController.clear();
+                                _filterVariant('');
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.blue, width: 1.5),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      _filterVariant(value);
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
               IconButton(
                 onPressed: _fetchVariants,
                 icon: const Icon(Icons.refresh, color: Colors.grey),
@@ -259,9 +320,9 @@ class _ListVariantsState extends State<ListVariants> {
                   : ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _variantsList.length,
+                      itemCount: _variantsFoodList.length,
                       itemBuilder: (context, index) {
-                        final item = _variantsList[index];
+                        final item = _variantsFoodList[index];
                         final String variantName = item['variant_name'] ??
                             item['variants_name'] ??
                             '';

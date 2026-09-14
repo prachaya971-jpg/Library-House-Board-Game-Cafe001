@@ -288,8 +288,7 @@ class _ListtopproductState extends State<Listtopproduct> {
                               );
 
                               // กำหนด Base URL ตรงไปยัง /img/
-                              const String serverUrl =
-                                  'http://localhost:3000/img/';
+                              final String serverUrl = '${AppConfig.apiBaseUri.replaceAll('/api', '')}/img/';
 
                               if (imageName != null && imageName.isNotEmpty) {
                                 final String imageUrl =

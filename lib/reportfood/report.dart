@@ -5,6 +5,7 @@ import '../app_sidebar.dart';
 import 'listvariants.dart';
 import 'listoption.dart';
 import 'listtype.dart';
+import 'listfood.dart';
 
 class ReportMainPage extends StatefulWidget {
   const ReportMainPage({Key? key}) : super(key: key);
@@ -52,12 +53,7 @@ class _ReportMainPageState extends State<ReportMainPage> {
       case 'type':
         return const  ListType();
       case 'food':
-        return const Center(
-          child: Padding(
-            padding: EdgeInsets.all(32.0),
-            child: Text('รายงานข้อมูลระบบอาหาร'),
-          ),
-        );
+        return  const  ListFood();
       default:
         return const SizedBox.shrink();
     }
