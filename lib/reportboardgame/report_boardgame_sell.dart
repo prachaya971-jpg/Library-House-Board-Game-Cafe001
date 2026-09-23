@@ -4,68 +4,46 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:cafa_boardgame/utils/appapi.dart';
 import 'package:cafa_boardgame/config/app_config.dart';
-import 'package:qr_flutter/qr_flutter.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:flutter/services.dart';
+import 'package:barcode_widget/barcode_widget.dart';
+// import 'package:flutter/services.dart';
 
-
-class ReportBoardgameforborrow extends StatefulWidget {
+class ReportBoardgameforsell extends StatefulWidget {
   final int? roleId;
 
-  const ReportBoardgameforborrow({super.key, this.roleId});
+  const ReportBoardgameforsell({super.key, this.roleId});
 
   @override
-  State<ReportBoardgameforborrow> createState() =>
-      _ReportBoardgameforborrowState();
+  State<ReportBoardgameforsell> createState() => _ReportBoardgameforsellState();
 }
 
-class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
+class _ReportBoardgameforsellState extends State<ReportBoardgameforsell> {
   bool _isLoading = false;
-  List<dynamic> _bgborrowList = [];
+  List<dynamic> _bgsellList = [];
   int _currentRoleId = 2;
-  List<dynamic> _typesList = [];
-  XFile? _pickedXFile;
-  Uint8List? _imageBytes;
-  List<bool> _checkboxValues = [];
 
   final TextEditingController _searchController = TextEditingController();
-  List<dynamic> _filteredboardgameborrow = [];
+  List<dynamic> _filteredboardgamesell = [];
 
   @override
   void initState() {
     super.initState();
     _loadRole();
-    _fetchTypes();
+    _fetchbgsell();
   }
-  
 
-  void _filterboardgameborrow(String query) {
+  void _filterboardgamesell(String query) {
     setState(() {
       if (query.trim().isEmpty) {
-        _filteredboardgameborrow = List.from(_bgborrowList);
+        _filteredboardgamesell = List.from(_bgsellList);
       } else {
-        _filteredboardgameborrow = _bgborrowList.where((bgborrow) {
-          final bgborrowName =
-              bgborrow['bgp_name']?.toString().toLowerCase() ?? '';
+        _filteredboardgamesell = _bgsellList.where((bgsell) {
+          final bgsellName = bgsell['bg_name']?.toString().toLowerCase() ?? '';
           final searchLower = query.toLowerCase();
-          return bgborrowName.contains(searchLower);
+          return bgsellName.contains(searchLower);
         }).toList();
       }
     });
   }
-
-  //คำสั่งสร้าง Qrcode
-Widget buildQrCode(dynamic qr) {
-  final String qrdata = qr.toString();
-
-  return QrImageView(
-    data: qrdata,                   
-    version: QrVersions.auto,       
-    size: 200.0,                    
-    backgroundColor: Colors.white,  
-    errorCorrectionLevel: QrErrorCorrectLevel.M, 
-  );
-}
 
   Future<void> _loadRole() async {
     if (widget.roleId != null) {
@@ -86,15 +64,45 @@ Widget buildQrCode(dynamic qr) {
     }
   }
 
+  //สร้าง barcode
+  Widget buildBarcode(String barcodeNumber) {
+  if (barcodeNumber.trim().isEmpty) {
+    return const Text('ไม่มีบาร์โค้ด', style: TextStyle(color: Colors.grey));
+  }
+
+  // แยก บาร์โค้ด
+  final List<String> barcodes = barcodeNumber
+      .split(',')
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
+
+  return Column(
+    children: barcodes.map((code) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12.0),
+        child: BarcodeWidget(
+          barcode: Barcode.code128(),
+          data: code,
+          width: 250,
+          height: 80,
+          drawText: true,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+        ),
+      );
+    }).toList(),
+  );
+}
+
   // function แสดงข้อมูลของปุ่มแสดงรายละเอียด
   void _showDetailDialog(Map<String, dynamic> item) {
-    final String? imgName = item['img_game_play'] ?? item['borrow_img'];
-
+    final String? imgName = item['img_game_sale'] ?? item['sell_img'];
+    // final int bgsellid = item['bg_id'] ?? '';
     final String imagepath = imgName != null && imgName.isNotEmpty
-        ? '${AppConfig.apiBaseUri.replaceAll('/api', '')}/img/borrow/$imgName'
+        ? '${AppConfig.apiBaseUri.replaceAll('/api', '')}/img/boardgame/$imgName'
         : '';
 
-    final String qrcodedata = item['bgp_id'].toString();
+    final String barcodeData = item['barcodelist']?.toString() ?? '';
 
     showDialog(
       context: context,
@@ -198,18 +206,14 @@ Widget buildQrCode(dynamic qr) {
                 ),
 
                 const SizedBox(height: 16),
-                const SizedBox(
-                  height: 20,
-                ),
+                const SizedBox(height: 20),
                 // ข้อความ
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // ชื่อบอร์ดเกม/ชื่อประเภท
                     Text(
-                      item['bgp_name'] ??
-                          item['bgborrow_name'] ??
-                          'ไม่มีชื่อรายการ',
+                      item['bg_name'] ?? 'ไม่มีชื่อรายการ',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -219,22 +223,22 @@ Widget buildQrCode(dynamic qr) {
                     const SizedBox(height: 8),
 
                     // id
-                    Row(
-                      children: [
-                        const Text(
-                          'เราต้องมี id มั้ย: ',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        Text(
-                          '${item['bgp_id']}',
-                          style: const TextStyle(color: Colors.black87),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
+                    // Row(
+                    //   children: [
+                    //     const Text(
+                    //       'เราต้องมี id มั้ย: ',
+                    //       style: TextStyle(
+                    //         fontWeight: FontWeight.bold,
+                    //         color: Colors.grey,
+                    //       ),
+                    //     ),
+                    //     Text(
+                    //       '$bgsellid',
+                    //       style: const TextStyle(color: Colors.black87),
+                    //     ),
+                    //   ],
+                    // ),
+                    // const SizedBox(height: 6),
 
                     // จำนวน
                     Row(
@@ -249,7 +253,7 @@ Widget buildQrCode(dynamic qr) {
                         ),
                         Expanded(
                           child: Text(
-                                item['quantity'] .toString(),
+                            item['quantity'].toString(),
                             style: const TextStyle(color: Colors.black87),
                           ),
                         ),
@@ -268,17 +272,25 @@ Widget buildQrCode(dynamic qr) {
                         ),
                         Expanded(
                           child: Text(
-                            item['catagorylist'] ??
-                                'แกเป็นตัวอะไรเนี่ย',
+                            item['catagorylist'] ?? 'แกเป็นตัวอะไรเนี่ย',
                             style: const TextStyle(color: Colors.black87),
                           ),
                         ),
                       ],
                     ),
-                    
                   ],
                 ),
-                buildQrCode([qrcodedata])
+                //แสดง barcode
+                const SizedBox(height: 16),
+                const Text(
+                  'รายการบาร์โค้ด:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Center(child: buildBarcode(barcodeData)),
               ],
             ),
           ),
@@ -287,18 +299,16 @@ Widget buildQrCode(dynamic qr) {
     );
   }
 
-
-
-  Future<void> _fetchTypes() async {
+  Future<void> _fetchbgsell() async {
     setState(() => _isLoading = true);
     try {
-      final response = await AppAPI.get('/boardgame/report-bgborrow');
+      final response = await AppAPI.get('/boardgame/report-bgsell');
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
         if (!json['isError']) {
           setState(() {
-            _bgborrowList = json['data'] ?? [];
-            _filteredboardgameborrow = List.from(_bgborrowList);
+            _bgsellList = json['data'] ?? [];
+            _filteredboardgamesell = List.from(_bgsellList);
           });
         }
       } else {
@@ -311,133 +321,27 @@ Widget buildQrCode(dynamic qr) {
     }
   }
 
-  //แก้ไขรายการ
+  // 2. แสดง Dialog แก้ไขรายการ
   Future<void> _showEditDialog(Map<String, dynamic> item) async {
-    final int bgborrowid = item['bgborrow_id'] ?? item['bgp_id'] ?? 0;
-    final TextEditingController nameController = TextEditingController(
-      text: item['bgp_name'] ?? item['bgborrow_name'] ?? '',
-    );
-    final TextEditingController quantityController = TextEditingController(
-      text: item['quantity']?.toString() ?? '0',
+    final int bgsellid = item['bgsell_id'] ?? item['bgs_id'] ?? 0;
+    final TextEditingController editController = TextEditingController(
+      text: item['bg_name'] ?? '',
     );
 
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('แก้ไขข้อมูลบอร์ดเกม'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'ชื่อ',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    hintText: 'กรอกชื่อบอร์ดเกม',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 16),
-
-                const Text(
-                  'จำนวน',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: quantityController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    hintText: 'กรอกจำนวน',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // ปุ่มเลือก/เปลี่ยนรูปภาพ
-          Align(
-            alignment: Alignment.centerLeft,
-            child: ElevatedButton.icon(
-              onPressed: _pickImage,
-              icon: const Icon(Icons.image, color: Colors.black87),
-              label: Text(
-                _pickedXFile == null ? 'เลือกรูปภาพ' : 'เปลี่ยนรูปภาพ',
-                style: const TextStyle(color: Colors.black87),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[200],
-                elevation: 0,
+          title: const Text('แก้ไขชื่อประเภท'),
+          content: TextField(
+            controller: editController,
+            decoration: InputDecoration(
+              labelText: 'ชื่อประเภท',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),
-
-          if (_pickedXFile != null && _imageBytes != null) ...[
-            const SizedBox(height: 12),
-            Builder(
-              builder: (context) {
-                double imageSize = MediaQuery.of(context).size.width * 0.010;
-                if (imageSize < 60) imageSize = 60;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        width: imageSize,
-                        height: imageSize,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Image.memory(_imageBytes!, fit: BoxFit.cover),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _pickedXFile!.name,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                        fontStyle: FontStyle.italic,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
-          const SizedBox(height: 30),
-          
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -459,21 +363,19 @@ Widget buildQrCode(dynamic qr) {
     );
 
     if (confirm == true) {
-      final newName = nameController.text.trim();
-      final newQuantity = int.tryParse(quantityController.text.trim()) ?? 0;
-      
+      final newName = editController.text.trim();
       if (newName.isNotEmpty) {
-        _updateType(bgborrowid, newName, newQuantity);
+        _updateType(bgsellid, newName);
       }
     }
   }
 
   // ส่ง API แก้ไขข้อมูล (ยังไม่แก้ รอทำ database ให้เสร็จก่อน)
-  Future<void> _updateType(int id, String newName, int newQuantity) async {
+  Future<void> _updateType(int id, String newName) async {
     try {
       final response = await AppAPI.post('/boardgame/update-type', {
         'boardgame_type_id': id,
-        'bgp_name': newName,
+        'bg_name': newName,
       });
 
       final jsonRes = jsonDecode(response.body);
@@ -483,7 +385,7 @@ Widget buildQrCode(dynamic qr) {
             context,
           ).showSnackBar(const SnackBar(content: Text('แก้ไขข้อมูลสำเร็จ')));
         }
-        _fetchTypes();
+        _fetchbgsell();
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -502,15 +404,15 @@ Widget buildQrCode(dynamic qr) {
 
   // 3. แสดง Dialog ยืนยันการลบ
   Future<void> _showDeleteDialog(Map<String, dynamic> item) async {
-    final int bgborrowid = item['bgborrow_id'] ?? item['bgp_id'] ?? 0;
-    final String bgborrowName = item['bgborrow_name'] ?? item['bgp_name'] ?? '';
+    final int bgsellid = item['bg_id'] ?? item['bgs_id'] ?? 0;
+    final String bgsellName = item['bgsell_name'] ?? item['bg_name'] ?? '';
 
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('ยืนยันการลบข้อมูล'),
-          content: Text('คุณต้องการลบบอร์ดเกม "$bgborrowName" ใช่หรือไม่?'),
+          content: Text('คุณต้องการลบบอร์ดเกม "$bgsellName" ใช่หรือไม่?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -527,15 +429,15 @@ Widget buildQrCode(dynamic qr) {
     );
 
     if (confirm == true) {
-      _deleteType(bgborrowid);
+      _deleteType(bgsellid);
     }
   }
 
   // ส่ง API ลบข้อมูล
   Future<void> _deleteType(int id) async {
     try {
-      final response = await AppAPI.post('/boardgame/delete-bgborrow', {
-        'bgp_id': id,
+      final response = await AppAPI.post('/boardgame/delete-bgsell', {
+        'bgs_id': id,
       });
 
       final jsonRes = jsonDecode(response.body);
@@ -545,7 +447,7 @@ Widget buildQrCode(dynamic qr) {
             context,
           ).showSnackBar(const SnackBar(content: Text('ลบข้อมูลสำเร็จ')));
         }
-        _fetchTypes();
+        _fetchbgsell();
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -588,7 +490,7 @@ Widget buildQrCode(dynamic qr) {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'รายการบอร์ดเกมสำหรับยืมเล่น (boardgame for borrow)',
+                'รายการบอร์ดเกมสำหรับขาย (boardgame for sell)',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -619,7 +521,7 @@ Widget buildQrCode(dynamic qr) {
                               ),
                               onPressed: () {
                                 _searchController.clear();
-                                _filterboardgameborrow('');
+                                _filterboardgamesell('');
                               },
                             )
                           : null,
@@ -646,14 +548,14 @@ Widget buildQrCode(dynamic qr) {
                       ),
                     ),
                     onChanged: (value) {
-                      _filterboardgameborrow(value);
+                      _filterboardgamesell(value);
                     },
                   ),
                 ),
               ),
               const SizedBox(width: 8),
               IconButton(
-                onPressed: _fetchTypes,
+                onPressed: _fetchbgsell,
                 icon: const Icon(Icons.refresh, color: Colors.grey),
                 tooltip: 'รีเฟรชข้อมูล',
               ),
@@ -669,7 +571,7 @@ Widget buildQrCode(dynamic qr) {
                   padding: EdgeInsets.all(32.0),
                   child: Center(child: CircularProgressIndicator()),
                 )
-              : _bgborrowList.isEmpty
+              : _bgsellList.isEmpty
               ? const Padding(
                   padding: EdgeInsets.all(32.0),
                   child: Center(child: Text('ไม่พบรายการบอร์ดเกม')),
@@ -677,15 +579,11 @@ Widget buildQrCode(dynamic qr) {
               : ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _filteredboardgameborrow.length,
+                  itemCount: _filteredboardgamesell.length,
                   itemBuilder: (context, index) {
-                    final item = _filteredboardgameborrow[index];
-                    final String typeName =
-                        item['bgp_name'] ??
-                        // item['img_game_play'] ??
-                        '';
-                    final String? imgicon =
-                        item['img_game_play'] ;
+                    final item = _filteredboardgamesell[index];
+                    final String typeName = item['bg_name'] ?? '';
+                    final String? imgicon = item['img_game_sale'];
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 10),
@@ -704,7 +602,7 @@ Widget buildQrCode(dynamic qr) {
                           borderRadius: BorderRadius.circular(8),
                           child: imgicon != null && imgicon.isNotEmpty
                               ? Image.network(
-                                  '${AppConfig.apiBaseUri.replaceAll('/api', '')}/img/borrow/$imgicon',
+                                  '${AppConfig.apiBaseUri.replaceAll('/api', '')}/img/boardgame/$imgicon',
                                   width: 48,
                                   height: 48,
                                   fit: BoxFit.cover,
@@ -790,6 +688,7 @@ Widget buildQrCode(dynamic qr) {
       ),
     );
   }
+
   Widget _buildDefaultAvatar(int index) {
     return CircleAvatar(
       backgroundColor: Colors.amber.shade100,
@@ -803,4 +702,3 @@ Widget buildQrCode(dynamic qr) {
     );
   }
 }
-

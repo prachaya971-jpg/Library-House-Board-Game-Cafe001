@@ -34,7 +34,7 @@ class _CreateBoardgameBorrowState extends State<CreateBoardgameBorrow> {
   List<bool> _checkboxValues = [];
 
   bool _isSubmitting = false;
-  // คำสั่งดึงประเภทมาเป้น checkbox (มีไปทำไม)
+  // คำสั่งดึงประเภทมาเป้น checkbox
   Future<void> _fetchTypes() async {
     setState(() => _isLoading = true);
     try {
@@ -305,7 +305,7 @@ class _CreateBoardgameBorrowState extends State<CreateBoardgameBorrow> {
           ),
           const SizedBox(height: 8),
 
-          // 1. ปุ่มเลือก/เปลี่ยนรูปภาพ
+          // เลือกรูป
           Align(
             alignment: Alignment.centerLeft,
             child: ElevatedButton.icon(

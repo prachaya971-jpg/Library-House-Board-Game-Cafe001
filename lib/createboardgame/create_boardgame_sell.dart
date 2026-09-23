@@ -357,7 +357,7 @@ class _CreateBoardgameSellState extends State<CreateBoardgameSell> {
             inputFormatters: [LengthLimitingTextInputFormatter(13)],
             decoration: InputDecoration(
               hintText: 'กรอกรหัส barcode(สามารถใช้เครื่องแสกนในการกรอกได้)',
-              border: OutlineInputBorder(
+              border: OutlineInputBorder( 
                 borderRadius: BorderRadius.circular(8),
               ),
               contentPadding: const EdgeInsets.symmetric(
