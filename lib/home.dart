@@ -8,6 +8,7 @@ import 'package:cafa_boardgame/dashdorad/adviceCountCard.dart';
 import 'package:cafa_boardgame/dashdorad/borrowcountCard.dart';
 import 'package:cafa_boardgame/dashdorad/RevenueBarChart.dart';
 import 'package:cafa_boardgame/dashdorad/listtopproduct.dart';
+import 'package:cafa_boardgame/dashdorad/reqtableCard.dart';
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -68,6 +69,8 @@ class _HomeState extends State<Home> {
                         Expanded(child: AdviceCountCard()),
                         SizedBox(width: 16),
                         Expanded(child: BorrowCountCard()),
+                        SizedBox(width: 16),
+                        Expanded(child: Reqtablecard()),
                       ],
                     ),
 

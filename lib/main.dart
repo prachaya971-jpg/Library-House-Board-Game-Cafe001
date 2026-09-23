@@ -13,8 +13,15 @@ import 'reportboardgame/report_boardgame.dart';
 import 'employee/reportemp.dart';
 import 'teble/table.dart';
 import 'cusorder/cusorder.dart';
+import 'order/tablereq.dart';
+import 'socket_service.dart';
+import 'package:cafa_boardgame/cusorder/menu.dart';
+import 'customer_guard.dart';
+import 'staff_guard.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SocketService().initSocket();
   runApp(const MyApp());
 }
 
@@ -40,7 +47,13 @@ class MyApp extends StatelessWidget {
 
       onGenerateRoute: (settings) {
         final name = settings.name ?? '';
-        if (name.startsWith('/menu') || Uri.base.fragment.startsWith('/menu')) {
+        final fragment = Uri.base.fragment;
+ 
+        if (name == '/menucus' || fragment.startsWith('/menucus')) {
+          return null; 
+        }
+
+        if (name == '/menu' || name.startsWith('/menu?') || fragment.startsWith('/menu')) {
           return MaterialPageRoute(
             builder: (_) => const Cusorder(),
             settings: settings,
@@ -48,20 +61,29 @@ class MyApp extends StatelessWidget {
         }
         return null;
       },
+
       routes: {
+  
         '/': (context) => const Login(),
         '/login': (context) => const Login(),
         '/menu': (context) => const Cusorder(),
-        '/home': (context) => const Home(),
-        '/advice': (context) => const OrderScreen(),
-        '/order': (context) => const OrderraelScreen(),
-        '/create': (context) => const CreateMainPage(),
-        '/reports': (context) => const ReportMainPage(),
-        '/salereports': (context) => const Salereport(),
-        '/createboardgame': (context) => const Createboardgame(),
-        '/ReportBoardgameType': (context) => const reportboardgame(),
-        '/emp': (context) => const Employee(),
-        '/table': (context) => const Teble(),
+        // ส่วนของลูกค้า
+        
+        '/menucus': (context) => const CustomerRouteGuard(child: MenuHomeScreen(),),
+
+
+        // ส่วนของพนักงาน 
+        '/home': (context) => const StaffRouteGuard(child: Home()),
+        '/advice': (context) => const StaffRouteGuard(child: OrderScreen()),
+        '/order': (context) => const StaffRouteGuard(child: OrderraelScreen()),
+        '/create': (context) => const StaffRouteGuard(child: CreateMainPage()),
+        '/reports': (context) => const StaffRouteGuard(child: ReportMainPage()),
+        '/salereports': (context) => const StaffRouteGuard(child: Salereport()),
+        '/createboardgame': (context) => const StaffRouteGuard(child: Createboardgame()),
+        '/ReportBoardgameType': (context) => const StaffRouteGuard(child: reportboardgame()),
+        '/emp': (context) => const StaffRouteGuard(child: Employee()),
+        '/table': (context) => const StaffRouteGuard(child: Teble()),
+        '/tablereq': (context) => const StaffRouteGuard(child: Tablereq()),
       },
     );
   }

@@ -1,50 +1,77 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:cafa_boardgame/utils/appapi.dart';
+import 'package:cafa_boardgame/socket_service.dart';
 
-class BorrowCountCard extends StatefulWidget {
-  const BorrowCountCard({super.key});
+
+class Reqtablecard extends StatefulWidget {
+  const Reqtablecard({super.key});
 
   @override
-  State<BorrowCountCard> createState() => _BorrowCountCardState();
+  State<Reqtablecard> createState() => _ReqtablecardState();
 }
 
-class _BorrowCountCardState extends State<BorrowCountCard> {
-  int _borrowCount = 0;
+class _ReqtablecardState extends State<Reqtablecard> {
+  int  _tableRequestCount = 0;
   bool _isLoading = false;
 
+  late final void Function(dynamic) _cardTableHandler;
   @override
   void initState() {
     super.initState();
-    _fetchBorrowCount();
+    _fetchTableRequestCount();
+
+    _cardTableHandler = (data) {
+      print(" [Reqtablecard] Real-time Triggered: ${data['table_number']}");
+      if (mounted) {
+        _fetchTableRequestCount();
+      }
+    };
+    
+    _bindSocketListener();
   }
 
-  Future<void> _fetchBorrowCount() async {
-  setState(() => _isLoading = true);
 
+  void _bindSocketListener() {
+    final socket = SocketService().socket;
+
+    if (socket != null) {
+      socket.off('new_table_request', _cardTableHandler);
+      socket.on('new_table_request', _cardTableHandler);
+
+      if (!socket.connected) {
+        socket.connect();
+      }
+    }
+  }
+
+  Future<void> _fetchTableRequestCount() async {
   try {
-    final response = await AppAPI.get('/reports/borrow-count');
+    final response = await AppAPI.get('/table_requests/count');
 
-    final json = jsonDecode(response.body);
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
 
-    if (!json['isError']) {
-      setState(() {
-        var rawCount = json['data']['total_borrows'];
-        if (rawCount is int) {
-          _borrowCount = rawCount;
-        } else if (rawCount is String) {
-          _borrowCount = int.tryParse(rawCount) ?? 0;
-        } else {
-          _borrowCount = 0;
+      if (json['isError'] == false && json['data'] != null) {
+        if (mounted) {
+          setState(() {
+            _tableRequestCount = int.tryParse(
+              json['data']['total_pending_requests']?.toString() ?? '0',
+            ) ?? 0;
+          });
         }
-      });
+      }
     }
   } catch (e) {
-    print("Error fetching borrow count: $e");
-  } finally {
-    if (mounted) setState(() => _isLoading = false);
+    print("Error fetching table request count: $e");
   }
 }
+
+@override
+  void dispose() {
+    SocketService().socket?.off('new_table_request', _cardTableHandler);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +98,7 @@ class _BorrowCountCardState extends State<BorrowCountCard> {
         children: [
           // หัวข้อการ์ด
           const Text(
-            "รายการการยืม",
+            "รายการขอเปิดโต๊ะ",
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -96,9 +123,9 @@ class _BorrowCountCardState extends State<BorrowCountCard> {
   }
 
   Widget _buildContent() {
-    if (_borrowCount == 0) {
+    if (_tableRequestCount == 0) {
       return const Text(
-        "ยังไม่มีรายการการยืม",
+        "ยังไม่มีขอเปิดโต๊ะ",
         style: TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.bold,
@@ -113,7 +140,7 @@ class _BorrowCountCardState extends State<BorrowCountCard> {
       textBaseline: TextBaseline.alphabetic,
       children: [
         Text(
-          "$_borrowCount",
+          "$_tableRequestCount",
           style: const TextStyle(
             fontSize: 42,
             fontWeight: FontWeight.bold,
@@ -122,7 +149,7 @@ class _BorrowCountCardState extends State<BorrowCountCard> {
         ),
         const SizedBox(width: 8),
         const Text(
-          "รายการ",
+          "รายการ", // หรือใช้คำว่า "ออเดอร์"
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,

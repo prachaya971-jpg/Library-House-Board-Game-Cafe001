@@ -8,6 +8,8 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:cafa_boardgame/config/app_config.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 
 class Teble extends StatefulWidget {
   final int? roleId;
@@ -260,7 +262,8 @@ class _TebleState extends State<Teble> {
   final thaiFont = await PdfGoogleFonts.sarabunRegular();
   final thaiFontBold = await PdfGoogleFonts.sarabunBold();
 
-  final String qrData = "${AppConfig.apicusBaseUri}/menu?table=$tableNum";
+  final String tableNo = sha256.convert(utf8.encode(tableNum)).toString();
+  final String qrData = "${AppConfig.apicusBaseUri}/menu?table=$tableNo";
 
   pdf.addPage(
     pw.Page(
@@ -291,7 +294,7 @@ class _TebleState extends State<Teble> {
                   ),
                 ),
                 pw.SizedBox(height: 8),
-                // ข้อความภาษาไทยจะแสดงผลถูกต้อง
+          
                 pw.Text(
                   'โต๊ะ $tableNum',
                   style: pw.TextStyle(
@@ -307,6 +310,13 @@ class _TebleState extends State<Teble> {
                   width: 140,
                   height: 140,
                 ),
+                pw.SizedBox(height: 14),
+                pw.Text(
+                  'ลิ้ง:$qrData',
+                  style: pw.TextStyle(
+                    fontSize: 9,
+                     font: thaiFont,)
+                  ),
                 pw.SizedBox(height: 14),
                 pw.Text(
                   'สแกนเพื่อสั่งอาหาร (Scan to Order)',
