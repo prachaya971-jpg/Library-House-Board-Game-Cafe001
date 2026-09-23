@@ -1,66 +1,89 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../app_sidebar.dart';
-import 'dart:convert';
+import 'package:cafa_boardgame/config/app_config.dart';
 import 'package:cafa_boardgame/utils/appapi.dart';
+import 'package:cafa_boardgame/socket_service.dart';
 
-class OrderScreen extends StatefulWidget {
-  const OrderScreen({Key? key}) : super(key: key);
-
+class Tablereq extends StatefulWidget {
+  const Tablereq({Key? key}) : super(key: key);
+  
   @override
-  State<OrderScreen> createState() => _OrderScreenState();
+  State<Tablereq> createState() => _TablereqState();
 }
 
-class _OrderScreenState extends State<OrderScreen> {
+class _TablereqState extends State<Tablereq> {
   int roleId = 1;
-  List<dynamic> _adviceList = [];
+  List<dynamic> _tablereqList = [];
   bool _isLoading = true;
+  late final void Function(dynamic) _tablereqHandler;
 
   @override
   void initState() {
     super.initState();
     _loadRoleFromToken();
-    _fetchAdvices();
+    _fetchtablereq();   
+       
+    _tablereqHandler = (data) {
+      print("[Tablereq Screen] Real-time Triggered");
+      if (mounted) _fetchtablereq();
+    };
+
+    _bindSocketListener();
   }
 
-  Future<void> _fetchAdvices() async {
-    setState(() => _isLoading = true);
-    try {
-      final response = await AppAPI.get('/advice/advice-list');
-      if (response.statusCode == 200) {
-        final dynamic json = jsonDecode(response.body);
+void _bindSocketListener() {
+    final socket = SocketService().socket;
+    if (socket != null) {
+      socket.off('new_table_request', _tablereqHandler);
+      socket.on('new_table_request', _tablereqHandler);
+      if (!socket.connected) socket.connect();
+    }
+  }
 
-        if (json is Map<String, dynamic>) {
-          if (json['isError'] == false && json['data'] != null && json['data'] is List) {
-            setState(() {
-              _adviceList = json['data'] as List<dynamic>;
-            });
-          } else {
-            setState(() {
-              _adviceList = [];
-            });
-          }
-        } else if (json is List) {
+  Future<void> _fetchtablereq() async {
+  if (!mounted) return;
+  setState(() => _isLoading = true);
+
+  try {
+    final response = await AppAPI.get('/table/table-req-list');
+    if (!mounted) return;
+
+    if (response.statusCode == 200) {
+      final dynamic json = jsonDecode(response.body);
+
+      if (json is Map<String, dynamic>) {
+        if (json['isError'] == false && json['data'] != null && json['data'] is List) {
           setState(() {
-            _adviceList = json;
+            _tablereqList = json['data'] as List<dynamic>;
           });
         } else {
           setState(() {
-            _adviceList = [];
+            _tablereqList = [];
           });
         }
+      } else if (json is List) {
+        setState(() {
+          _tablereqList = json;
+        });
       } else {
-        print("Server Error: ${response.statusCode} - ${response.body}");
-        if (mounted) setState(() => _adviceList = []);
+        setState(() {
+          _tablereqList = [];
+        });
       }
-    } catch (e) {
-      print("Error fetching advices: $e");
-      if (mounted) setState(() => _adviceList = []);
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    } else {
+      print("Server Error: ${response.statusCode} - ${response.body}");
+      if (mounted) setState(() => _tablereqList = []);
     }
+  } catch (e) {
+    print("Error fetching requests: $e");
+    if (mounted) setState(() => _tablereqList = []);
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
+}
 
   Future<void> _loadRoleFromToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -77,14 +100,14 @@ class _OrderScreenState extends State<OrderScreen> {
   }
 
   
-  Future<void> _markAsAdvised(int adviceId, String tableNumber) async {
+  Future<void> _markAsAdvised(int tableNumber,int table_request_id) async {
     final messenger = ScaffoldMessenger.of(context);
 
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text("ยืนยันการให้คำปรึกษา"),
-        content: Text('ต้องการเปลี่ยนสถานะของโต๊ะ "$tableNumber" เป็นให้คำปรึกษาแล้วใช่หรือไม่?'),
+        title: const Text("ยืนยันการเปิดโต๊ะ"),
+        content: Text('ต้องการเปิดโต๊ะ "$tableNumber"ใช่หรือไม่?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -95,7 +118,7 @@ class _OrderScreenState extends State<OrderScreen> {
               backgroundColor: const Color(0xFF51A742),
             ),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('ให้คำปรึกษาแล้ว', style: TextStyle(color: Colors.white)),
+            child: const Text('เปิดโต๊ะแล้ว', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -103,8 +126,9 @@ class _OrderScreenState extends State<OrderScreen> {
 
     if (confirm == true) {
       try {
-        final response = await AppAPI.post('/advice/update-advice', {
-          'adviceId': adviceId,
+        final response = await AppAPI.post('/table/update_table_rep', {
+          'tableNumber': tableNumber,
+          'table_request_id':table_request_id,
         });
 
         final jsonRes = jsonDecode(response.body);
@@ -114,7 +138,62 @@ class _OrderScreenState extends State<OrderScreen> {
           messenger.showSnackBar(
             SnackBar(content: Text('จัดการรายการของโต๊ะ $tableNumber เรียบร้อยแล้ว')),
           );
-          _fetchAdvices();
+          _fetchtablereq();
+        } else {
+          if (!mounted) return;
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                'เกิดข้อผิดพลาด: ${jsonRes['errorMessage'] ?? 'ไม่สามารถอัปเดตได้'}',
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        print("Error updating advice status: $e");
+      }
+    }
+  }
+
+  Future<void> _markAscancle(int tableNumber,int table_request_id) async {
+    final messenger = ScaffoldMessenger.of(context);
+
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text("ยืนยันการไม่อนุมัติเปิดโต๊ะ"),
+        content: Text('ต้องการไม่อนุมัติเปิดโต๊ะ "$tableNumber"ใช่หรือไม่?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('ยกเลิก', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 249, 6, 6),
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('ไม่อนุมัติ', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        final response = await AppAPI.post('/table/cancel_table_rep', {
+          'tableNumber': tableNumber,
+          'table_request_id':table_request_id,
+        });
+
+        final jsonRes = jsonDecode(response.body);
+
+        if (response.statusCode == 200 && !jsonRes['isError']) {
+          if (!mounted) return;
+          messenger.showSnackBar(
+            SnackBar(content: Text('จัดการรายการของโต๊ะ $tableNumber เรียบร้อยแล้ว')),
+          );
+          _fetchtablereq();
         } else {
           if (!mounted) return;
           messenger.showSnackBar(
@@ -132,12 +211,18 @@ class _OrderScreenState extends State<OrderScreen> {
   }
 
   @override
+  void dispose() {
+    SocketService().socket?.off('new_table_request', _tablereqHandler);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 249, 250, 251),
       body: Row(
         children: [
-          AppSidebar(currentRoleId: roleId, currentRouteName: "คำปรึกษา"),
+          AppSidebar(currentRoleId: roleId, currentRouteName: "รายการเปิดโต๊ะ"),
 
           Expanded(
             child: Padding(
@@ -152,7 +237,7 @@ class _OrderScreenState extends State<OrderScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            "รายการคำปรึกษา / เรียกพนักงาน",
+                            "รายการคำขอเปิดโต๊ะ",
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
@@ -161,13 +246,13 @@ class _OrderScreenState extends State<OrderScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            "จำนวนทั้งหมด ${_adviceList.length} รายการ",
+                            "จำนวนทั้งหมด ${_tablereqList.length} รายการ",
                             style: TextStyle(color: Colors.grey[600], fontSize: 14),
                           ),
                         ],
                       ),
                       IconButton(
-                        onPressed: _fetchAdvices,
+                        onPressed: _fetchtablereq,
                         icon: const Icon(Icons.refresh, color: Colors.grey),
                         tooltip: 'รีเฟรชข้อมูล',
                       )
@@ -178,7 +263,7 @@ class _OrderScreenState extends State<OrderScreen> {
                   Expanded(
                     child: _isLoading
                         ? const Center(child: CircularProgressIndicator())
-                        : _adviceList.isEmpty
+                        : _tablereqList.isEmpty
                             ? Center(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -188,7 +273,7 @@ class _OrderScreenState extends State<OrderScreen> {
                                         size: 64, color: Colors.green[300]),
                                     const SizedBox(height: 12),
                                     const Text(
-                                      "ไม่มีรายการคำปรึกษาค้างอยู่",
+                                      "ไม่มีรายการคำขอเปิดโต๊ะ",
                                       style: TextStyle(
                                         fontSize: 16,
                                         color: Colors.grey,
@@ -206,9 +291,9 @@ class _OrderScreenState extends State<OrderScreen> {
                                   crossAxisSpacing: 16,
                                   mainAxisSpacing: 16,
                                 ),
-                                itemCount: _adviceList.length,
+                                itemCount: _tablereqList.length,
                                 itemBuilder: (context, index) {
-                                  final item = _adviceList[index] as Map<String, dynamic>? ?? {};
+                                  final item = _tablereqList[index] as Map<String, dynamic>? ?? {};
                                   return _buildAdviceCard(item);
                                 },
                               ),
@@ -223,9 +308,8 @@ class _OrderScreenState extends State<OrderScreen> {
   }
 
   Widget _buildAdviceCard(Map<String, dynamic> item) {
-    final int adviceId = int.tryParse(item['advice_id']?.toString() ?? '0') ?? 0;
-    final String tableNum = item['tablenumber']?.toString() ?? '-';
-    final String statusName = item['status_advice_name']?.toString() ?? 'ต้องการคำปรึกษา';
+    final int tableNum = int.tryParse(item['table_number']?.toString() ?? '0') ?? 0;
+     final int table_request_id = int.tryParse(item['table_request_id']?.toString() ?? '0') ?? 0;
 
     return Container(
       decoration: BoxDecoration(
@@ -260,7 +344,7 @@ class _OrderScreenState extends State<OrderScreen> {
                         size: 16, color: Color(0xFF2563EB)),
                     const SizedBox(width: 6),
                     Text(
-                      'โต๊ะ $tableNum',
+                      'โต๊ะ $tableNum มีลูกค้าเข้า',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF1D4ED8),
@@ -281,7 +365,7 @@ class _OrderScreenState extends State<OrderScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    statusName,
+                    'รอการเปิดโต๊ะ',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -300,10 +384,10 @@ class _OrderScreenState extends State<OrderScreen> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               ElevatedButton.icon(
-                onPressed: () => _markAsAdvised(adviceId, tableNum),
+                onPressed: () => _markAsAdvised(tableNum,table_request_id),
                 icon: const Icon(Icons.check, size: 16, color: Colors.white),
                 label: const Text(
-                  'ให้คำปรึกษา',
+                  'เปิดโต๊ะ',
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -314,7 +398,26 @@ class _OrderScreenState extends State<OrderScreen> {
                   ),
                   elevation: 0,
                 ),
+                
               ),
+              const SizedBox(width: 12),
+               ElevatedButton.icon(
+                onPressed: () => _markAscancle(tableNum,table_request_id),
+                icon: const Icon(Icons.close, size: 16, color: Colors.white),
+                label: const Text(
+                  'ไม่อนุมัติ',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 214, 14, 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  elevation: 0,
+                ),
+                
+              ), 
             ],
           ),
         ],

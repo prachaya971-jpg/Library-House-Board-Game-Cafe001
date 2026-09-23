@@ -51,7 +51,7 @@ class _SalereportState extends State<Salereport> {
       case 'borrow':
         return const BgBorrowReportPage();
       default:
-        return const SizedBox.shrink();
+        return const Salereportfood();
     }
   }
   @override

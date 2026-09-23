@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:cafa_boardgame/config/app_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class AppAPI {
+class AppAPICUS {
 
   static String get baseUri => AppConfig.apicusBaseUri;
  
@@ -18,7 +18,7 @@ class AppAPI {
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
         'Accept': 'application/json',
-        'Authorization': 'Bearer ${prefs.getString('token')}',
+        'Authorization': 'Bearer ${prefs.getString('customer_table_token')}',
       },
     );
 
@@ -35,7 +35,7 @@ class AppAPI {
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
         'Accept': 'application/json',
-        'Authorization': 'Bearer ${prefs.getString('token')}',
+        'Authorization': 'Bearer ${prefs.getString('customer_table_token')}',
       },
       body: jsonEncode(body),
     );

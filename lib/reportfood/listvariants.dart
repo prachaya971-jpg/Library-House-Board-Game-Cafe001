@@ -199,24 +199,44 @@ class _ListVariantsState extends State<ListVariants> {
       });
 
       final jsonRes = jsonDecode(response.body);
-      if (response.statusCode == 200 && !jsonRes['isError']) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('ลบข้อมูลสำเร็จ')),
-          );
-        }
-        _fetchVariants(); 
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('เกิดข้อผิดพลาด: ${jsonRes['errorMessage']}')),
-          );
-        }
+    if (!mounted) return;
+
+    if (response.statusCode == 200 && jsonRes['isError'] == false) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ลบข้อมูลสำเร็จ'),
+          backgroundColor: Colors.black,
+        ),
+      );
+      _fetchVariants();
+    } else {
+      String rawError = jsonRes['errorMessage']?.toString() ?? '';
+      String displayError = 'เกิดข้อผิดพลาด: $rawError';
+      if (rawError.contains('1451') || 
+          rawError.contains('foreign key constraint fails') ||
+          rawError.contains('ER_ROW_IS_REFERENCED')) {
+        displayError = 'ไม่สามารถลบได้ เนื่องจากมีการดำเนินการรายการนี้แล้ว';
       }
-    } catch (e) {
-      print("Error deleting variant: $e");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(displayError),
+          backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+        ),
+      );
+    }
+  } catch (e) {
+    debugPrint("Error deleting food: $e");
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อ: $e'),
+          backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+        ),
+      );
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {

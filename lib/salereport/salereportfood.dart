@@ -27,6 +27,7 @@ class _SalereportfoodState extends State<Salereportfood> {
     _dateController.dispose();
     super.dispose();
   }
+
   Future<void> _fetchfoodsale() async {
     setState(() => _isLoading = true);
     try {
@@ -347,40 +348,14 @@ class _SalereportfoodState extends State<Salereportfood> {
 
                             const SizedBox(width: 10),
 
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  print('ยังไม่ทำ');
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color.fromARGB(
-                                    255,
-                                    210,
-                                    222,
-                                    208,
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 36,
-                                    vertical: 12,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    side: const BorderSide(
-                                      color: Color.fromARGB(255, 46, 46, 46), 
-                                      width:
-                                          1,
-                                    ),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'ดูรายละเอียด',
-                                  style: TextStyle(
-                                    color: Color.fromARGB(255, 5, 5, 5),
-                                    fontSize: 16,
-                                  ),
-                                ),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.visibility,
+                                color: Colors.blue,
+                                size: 20,
                               ),
+                              onPressed: () => const Text('5555'),
+                              tooltip: 'ดูรายละเอียด',
                             ),
                           ],
                         ),
