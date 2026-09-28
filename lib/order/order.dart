@@ -5,6 +5,7 @@ import '../app_sidebar.dart';
 import 'dart:convert';
 import 'package:cafa_boardgame/config/app_config.dart';
 import 'package:cafa_boardgame/utils/appapi.dart';
+import 'package:cafa_boardgame/socket_service.dart';
 
 class OrderraelScreen extends StatefulWidget {
   const OrderraelScreen({Key? key}) : super(key: key);
@@ -17,12 +18,29 @@ class _OrderraelScreenState extends State<OrderraelScreen> {
   int roleId = 1;
   bool _isLoading = false;
   List<dynamic> _ordersList = [];
+  late final void Function(dynamic) _tablereqHandler;
 
   @override
   void initState() {
     super.initState();
     _loadRoleFromToken();
     _fetchOrders();
+
+    _tablereqHandler = (data) {
+      print("[Tablereq Screen] Real-time Triggered");
+      if (mounted) _fetchOrders();
+    };
+
+     _bindSocketListener();
+  }
+
+  void _bindSocketListener() {
+    final socket = SocketService().socket;
+    if (socket != null) {
+      socket.off('new_order', _tablereqHandler);
+      socket.on('new_order', _tablereqHandler);
+      if (!socket.connected) socket.connect();
+    }
   }
 
   Future<void> _fetchOrders() async {
@@ -112,7 +130,7 @@ class _OrderraelScreenState extends State<OrderraelScreen> {
           messenger.showSnackBar(
             SnackBar(content: Text('เสิร์ฟ $foodName เรียบร้อยแล้ว')),
           );
-          _fetchOrders(); // ดึงข้อมูลใหม่
+          
         } else {
           if (!mounted) return;
           messenger.showSnackBar(
@@ -127,6 +145,12 @@ class _OrderraelScreenState extends State<OrderraelScreen> {
         print("Error updating serve status: $e");
       }
     }
+  }
+
+@override
+  void dispose() {
+    SocketService().socket?.off('new_order', _tablereqHandler);
+    super.dispose();
   }
 
   @override

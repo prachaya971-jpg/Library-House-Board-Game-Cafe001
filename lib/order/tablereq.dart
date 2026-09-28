@@ -16,6 +16,7 @@ class Tablereq extends StatefulWidget {
 
 class _TablereqState extends State<Tablereq> {
   int roleId = 1;
+  int _empId = 0;
   List<dynamic> _tablereqList = [];
   bool _isLoading = true;
   late final void Function(dynamic) _tablereqHandler;
@@ -88,26 +89,26 @@ void _bindSocketListener() {
   Future<void> _loadRoleFromToken() async {
     final prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
-
     if (token != null && !JwtDecoder.isExpired(token)) {
       Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
       if (mounted) {
         setState(() {
           roleId = decodedToken['emp_role_id'] ?? 1;
+          _empId = decodedToken['emp_id'];
         });
       }
     }
   }
 
   
-  Future<void> _markAsAdvised(int tableNumber,int table_request_id) async {
+  Future<void> _markAsAdvised(int tableNumber,int table_request_id,int emp_id) async {
     final messenger = ScaffoldMessenger.of(context);
 
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text("ยืนยันการเปิดโต๊ะ"),
-        content: Text('ต้องการเปิดโต๊ะ "$tableNumber"ใช่หรือไม่?'),
+        content: Text('ต้องการเปิดโต๊ะ "$tableNumber $emp_id"ใช่หรือไม่?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -129,6 +130,7 @@ void _bindSocketListener() {
         final response = await AppAPI.post('/table/update_table_rep', {
           'tableNumber': tableNumber,
           'table_request_id':table_request_id,
+           'emp_id':emp_id,
         });
 
         final jsonRes = jsonDecode(response.body);
@@ -384,7 +386,7 @@ void _bindSocketListener() {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               ElevatedButton.icon(
-                onPressed: () => _markAsAdvised(tableNum,table_request_id),
+                onPressed: () => _markAsAdvised(tableNum,table_request_id,_empId),
                 icon: const Icon(Icons.check, size: 16, color: Colors.white),
                 label: const Text(
                   'เปิดโต๊ะ',

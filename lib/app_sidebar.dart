@@ -32,6 +32,8 @@ class _AppSidebarState extends State<AppSidebar> {
   int _adviceCount = 0;
   int _tableRequestCount = 0;
   late final void Function(dynamic) _sidebarTableHandler;
+  late final void Function(dynamic) _sidebarOrderHandler;
+
 
   @override
   void initState() {
@@ -42,6 +44,10 @@ class _AppSidebarState extends State<AppSidebar> {
 
     _sidebarTableHandler = (data) {
       if (mounted) _fetchTableRequestCount();
+    };
+
+    _sidebarOrderHandler = (data) {
+      if (mounted) _fetchOrderCount();
     };
 
     
@@ -58,6 +64,11 @@ class _AppSidebarState extends State<AppSidebar> {
       
       socket.off('new_table_request', _sidebarTableHandler);
       socket.on('new_table_request', _sidebarTableHandler);
+
+      socket.off('new_order', _sidebarOrderHandler);
+      socket.on('new_order', _sidebarOrderHandler);
+
+
       if (!socket.connected) socket.connect();
     }
   }
@@ -137,6 +148,7 @@ class _AppSidebarState extends State<AppSidebar> {
 @override
 void dispose() {
   SocketService().socket?.off('new_table_request', _sidebarTableHandler);
+  SocketService().socket?.off('new_order',_sidebarOrderHandler);
   super.dispose();
 }
 

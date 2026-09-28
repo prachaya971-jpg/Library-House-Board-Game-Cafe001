@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:cafa_boardgame/cusapp_sidebar.dart';
-import 'product_page.dart';
-import 'boardgame_page.dart';
-import 'sendadvice.dart';
+import 'product/product_page.dart';
+import 'boardgame/boardgame_page.dart';
+import 'senddvice/sendadvice.dart';
 
 class MenuHomeScreen extends StatefulWidget {
   const MenuHomeScreen({super.key});
