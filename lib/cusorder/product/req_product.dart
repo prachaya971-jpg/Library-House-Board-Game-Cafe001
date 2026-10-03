@@ -25,12 +25,34 @@ class _ReqFoodState extends State<ReqFood> {
   int _quantity = 0;
   List<Map<String, dynamic>> _selectedOptions = [];
   bool _isSubmitting = false;
+  String? _savedName;
+  String? _deviceId;
+  
 
   @override
   void initState() {
     super.initState();
     _fetchfoodbyid();
     _fetchfoodoptionbyid();
+    _loadStoredData();
+  }
+
+  Future<void> _loadStoredData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final name = prefs.getString('saved_nickname');
+    final id = prefs.getString('client_device_id');
+
+    if (mounted) {
+      setState(() {
+        _savedName = name;
+        _deviceId = id;
+        _isLoading = false;
+      });
+
+      print('ชื่อเดิม:$_savedName');
+      print('Device ID: $_deviceId');
+    }
   }
 
   double _calculateTotalPrice(Map<String, dynamic>? item) {
@@ -148,8 +170,8 @@ class _ReqFoodState extends State<ReqFood> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              title: const Text('ยื่นยันการสั่งซื้อ'),
-              content: Text('คุณต้องการยื่นยันการสั่งซื้อใช่หรือไม่?'),
+              title: const Text('ยืนยันการสั่งซื้อ'),
+              content: const Text('คุณต้องการยืนยันการสั่งซื้อใช่หรือไม่?'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -174,15 +196,23 @@ class _ReqFoodState extends State<ReqFood> {
         ) ??
         false;
 
+    // 🟢 เพิ่มบรรทัดนี้: ถ้าผู้ใช้กดยกเลิก ให้หยุดการทำงานทันที
+    if (!confirm) return;
+
+    if (mounted) setState(() => _isSubmitting = true);
+
     try {
       final Map<String, dynamic>? item = _foodListbyid.isNotEmpty
-        ? _foodListbyid.first as Map<String, dynamic>
-        : null;
+          ? _foodListbyid.first as Map<String, dynamic>
+          : null;
+          
       final response = await AppAPICUS.post('/menu/reqorder', {
         'table_number': tableNumber,
         'base_price': item?['food_variant_price']?.toString(),
         'quantity': _quantity,
         'food_variant_id': item?['food_variant_id'],
+        'name': _savedName,
+        'drive_id': _deviceId,
         'options': _selectedOptions.map((opt) {
           return {
             'options_id': opt['options_id'] ?? opt['option_id'],
@@ -190,13 +220,15 @@ class _ReqFoodState extends State<ReqFood> {
         }).toList(),
       });
 
-      var jsonRes = jsonDecode(response.body);
+      // ตรวจสอบ response ตามโครงสร้าง helper (ถ้า return เป็น Map หรือ http.Response)
+      dynamic jsonRes = (response is http.Response) ? jsonDecode(response.body) : response;
+      final int statusCode = (response is http.Response) ? response.statusCode : 200;
 
-      if (response.statusCode == 200 && !jsonRes['isError']) {
+      if (statusCode == 200 && jsonRes['isError'] == false) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('สั่งอาหารสำเร็จ')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('สั่งอาหารสำเร็จ')),
+          );
           _resetOrderForm();
         }
       } else {
@@ -208,13 +240,10 @@ class _ReqFoodState extends State<ReqFood> {
               ),
             ),
           );
-          print(
-            'Error creating type: ${jsonRes['errorMessage'] ?? 'ไม่สามารถบันทึกได้'}',
-          );
         }
       }
     } catch (e) {
-      print("Error creating type: $e");
+      print("Error creating order: $e");
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }

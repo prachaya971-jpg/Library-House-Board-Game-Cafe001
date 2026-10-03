@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:cafa_boardgame/utils/appapicus.dart';
 import 'package:cafa_boardgame/config/app_config.dart';
 import 'req_product.dart';
+import 'cusbyid.dart';
 
 class ProductPage extends StatefulWidget {
   const ProductPage({super.key});
@@ -138,7 +139,6 @@ class _ProductPageState extends State<ProductPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. แถบค้นหาแนวนอน + ปุ่มรีเฟรช
                   Row(
                     children: [
                       Expanded(
@@ -218,12 +218,7 @@ class _ProductPageState extends State<ProductPage> {
                       ),
                     )
                   : GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(
-                        16,
-                        8,
-                        16,
-                        90,
-                      ), 
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 90),
                       itemCount: _filteredFoodList.length,
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
@@ -243,7 +238,11 @@ class _ProductPageState extends State<ProductPage> {
                             item['food_variant_price']?.toString() ?? '0';
                         final String? imgName = item['img_food_url']
                             ?.toString();
-                          final int foodVariantId = int.tryParse(item['food_variant_id']?.toString() ?? '') ?? 0;
+                        final int foodVariantId =
+                            int.tryParse(
+                              item['food_variant_id']?.toString() ?? '',
+                            ) ??
+                            0;
 
                         return Material(
                           color: Colors.white,
@@ -256,10 +255,8 @@ class _ProductPageState extends State<ProductPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => ReqFood(
-                                    id:
-                                        foodVariantId,
-                                  ),
+                                  builder: (context) =>
+                                      ReqFood(id: foodVariantId),
                                 ),
                               );
                             },
@@ -332,13 +329,15 @@ class _ProductPageState extends State<ProductPage> {
           ],
         ),
 
-        // 3. ปุ่มตะกร้าสินค้าลอยมุมขวาล่าง
         Positioned(
           right: 16,
           bottom: 24,
           child: GestureDetector(
             onTap: () {
-              debugPrint("กดเปิดตะกร้าสินค้า");
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => Cusorderbyid()),
+              );
             },
             child: Container(
               width: 58,
@@ -368,10 +367,7 @@ class _ProductPageState extends State<ProductPage> {
 
   Widget _buildCategorySelector() {
     final List<dynamic> categories = [
-      {
-        'type_id': 'all',
-        'type_name': 'ทั้งหมด', 
-      },
+      {'type_id': 'all', 'type_name': 'ทั้งหมด'},
       ..._typesList,
     ];
 

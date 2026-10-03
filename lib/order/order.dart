@@ -115,7 +115,6 @@ class _OrderraelScreenState extends State<OrderraelScreen> {
       ),
     );
 
-    // 2. ถ้าผู้ใช้กดยืนยัน (confirm == true) ค่อยทำการยิง API
     if (confirm == true) {
       try {
         final response = await AppAPI.post('/order/update-order-server', {
@@ -147,6 +146,69 @@ class _OrderraelScreenState extends State<OrderraelScreen> {
     }
   }
 
+  Future<void> _markcancel(
+    int orderDetailId,
+    String foodName,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    
+  
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text("ยืนยันการปฎิเสธออเดอร์"),
+        content: Text(
+          'ต้องการปฎิเสธออร์เดอร์ "$foodName" ใช่หรือไม่?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('ยกเลิก', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF51A742),
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text(
+              'ปฎิเสธออเดอร์',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        final response = await AppAPI.post('/order/cancel-order', {
+          'orderDetailId': orderDetailId,
+        });
+
+        final jsonRes = jsonDecode(response.body);
+
+        if (response.statusCode == 200 && !jsonRes['isError']) {
+          if (!mounted) return;
+          messenger.showSnackBar(
+            SnackBar(content: Text('ปฎิเสธออเดอร์ $foodName เรียบร้อยแล้ว')),
+          );
+          
+        } else {
+          if (!mounted) return;
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                'เกิดข้อผิดพลาด: ${jsonRes['errorMessage'] ?? 'ไม่สามารถอัปเดตได้'}',
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        print("Error canceling order: $e");
+      }
+    }
+  }
+  
 @override
   void dispose() {
     SocketService().socket?.off('new_order', _tablereqHandler);
@@ -264,7 +326,7 @@ class _OrderraelScreenState extends State<OrderraelScreen> {
     final int quantity = int.tryParse(item['quantity']?.toString() ?? '1') ?? 1;
     final double totalPrice =
         num.tryParse(item['total_price']?.toString() ?? '0')?.toDouble() ?? 0.0;
-
+    final String? name = item['name']?.toString();
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -381,6 +443,16 @@ class _OrderraelScreenState extends State<OrderraelScreen> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
+                        if (name != null && name.isNotEmpty)
+                        Text(
+                          'ชื่อลูกค้า: $name',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                     ],
                   ),
                 ),
@@ -431,8 +503,30 @@ class _OrderraelScreenState extends State<OrderraelScreen> {
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: statusid == 'N'
-                      ? const Color.fromARGB(255, 203, 31, 31)
+                      ? const Color.fromARGB(255, 203, 100, 31)
                       : const Color.fromARGB(255, 45, 155, 28),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => _markcancel(
+                  item['order_detail_id'], foodName),
+                label: Text(
+                  'ปฎิเสธ',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:  const Color.fromARGB(255, 203, 31, 31),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 8,

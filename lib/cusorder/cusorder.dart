@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:cafa_boardgame/utils/appapicus.dart';
 import 'package:cafa_boardgame/socket_service.dart';
+import 'package:uuid/uuid.dart';
 
 class Cusorder extends StatefulWidget {
   final String? tableNum;
@@ -24,6 +25,9 @@ class _CusorderState extends State<Cusorder> {
   bool _isLoading = true;
   String _errorMessage = '';
   String? _tableStatusId;
+  String? _name;
+  String? _driveID;
+
   late StreamSubscription _approvedSub;
   late StreamSubscription _rejectedSub;
 
@@ -39,13 +43,15 @@ class _CusorderState extends State<Cusorder> {
       if (mounted) _initFlow();
     });
 
-    
     _rejectedSub = SocketService().onTableRejected.listen((data) {
       print(" ได้รับสัญญาณ table_rejected: $data");
       if (mounted) {
         final msg = data['message'] ?? 'คำขอเปิดโต๊ะถูกปฏิเสธ';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg), backgroundColor: const Color.fromARGB(255, 6, 6, 6)),
+          SnackBar(
+            content: Text(msg),
+            backgroundColor: const Color.fromARGB(255, 6, 6, 6),
+          ),
         );
         _initFlow();
       }
@@ -53,15 +59,15 @@ class _CusorderState extends State<Cusorder> {
   }
 
   void joinTableRoom(String tableNumber) {
-  final cleanTable = tableNumber.trim();
-  if (cleanTable.isEmpty || cleanTable == '-') {
-    print(" เลขโต๊ะไม่ถูกต้อง ($cleanTable) ไม่ส่งคำขอเข้าห้อง");
-    return;
-  }
+    final cleanTable = tableNumber.trim();
+    if (cleanTable.isEmpty || cleanTable == '-') {
+      print(" เลขโต๊ะไม่ถูกต้อง ($cleanTable) ไม่ส่งคำขอเข้าห้อง");
+      return;
+    }
 
-  SocketService().joinTableRoom(cleanTable);
-  print("สั่งเข้าห้อง: table_$cleanTable");
-}
+    SocketService().joinTableRoom(cleanTable);
+    print("สั่งเข้าห้อง: table_$cleanTable");
+  }
 
   String _resolveTableHash() {
     if (widget.tableNum != null && widget.tableNum!.isNotEmpty) {
@@ -82,8 +88,9 @@ class _CusorderState extends State<Cusorder> {
     return table ?? '';
   }
 
- Future<void> _initFlow() async {
+  Future<void> _initFlow() async {
     final tableHash = _resolveTableHash();
+     _loadSavedIdentity();
 
     if (tableHash.isEmpty) {
       if (mounted) {
@@ -121,12 +128,12 @@ class _CusorderState extends State<Cusorder> {
       return;
     }
 
-
     try {
       final decoded = JwtDecoder.decode(accessResult.data);
       print("Decoded Payload ล่าสุด: $decoded");
 
-      final realTable = (decoded['table_number'] ?? decoded['tableno'])?.toString() ?? '-';
+      final realTable =
+          (decoded['table_number'] ?? decoded['tableno'])?.toString() ?? '-';
       final statusId = decoded['table_status_id']?.toString();
 
       if (mounted) {
@@ -138,7 +145,6 @@ class _CusorderState extends State<Cusorder> {
         });
       }
 
-      
       if (realTable.isNotEmpty && realTable != '-') {
         joinTableRoom(realTable);
       }
@@ -188,49 +194,48 @@ class _CusorderState extends State<Cusorder> {
   }
 
   Future<({bool isError, String data, String errorMessage})> _accessRequest(
-  String authenToken,
-) async {
-  try {
-    final response = await http.post(
-      Uri.parse("${AppConfig.apiBaseUri}/table/access_request"),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-      body: jsonEncode(<String, String>{'authen_token': authenToken}),
-    );
+    String authenToken,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse("${AppConfig.apiBaseUri}/table/access_request"),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, String>{'authen_token': authenToken}),
+      );
 
-    final json = jsonDecode(response.body);
-    print("ผลลัพธ์ access_request: $json");
+      final json = jsonDecode(response.body);
+      print("ผลลัพธ์ access_request: $json");
 
-    if (json["isError"] == false && json["data"] != null) {
-      
-      final accessToken = json["data"] is Map 
-          ? json["data"]["access_token"]?.toString() ?? ""
-          : json["data"]?.toString() ?? "";
+      if (json["isError"] == false && json["data"] != null) {
+        final accessToken = json["data"] is Map
+            ? json["data"]["access_token"]?.toString() ?? ""
+            : json["data"]?.toString() ?? "";
 
-      if (accessToken.isNotEmpty) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('customer_table_token', accessToken);
-        print(" บันทึก token สำเร็จ: $accessToken");
+        if (accessToken.isNotEmpty) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('customer_table_token', accessToken);
+          print(" บันทึก token สำเร็จ: $accessToken");
 
-        return (isError: false, data: accessToken, errorMessage: "");
+          return (isError: false, data: accessToken, errorMessage: "");
+        }
       }
-    }
 
-    return (
-      isError: true,
-      data: "",
-      errorMessage: json["errorMessage"]?.toString() ?? "ขอสิทธิ์ไม่สำเร็จ",
-    );
-  } catch (e) {
-    print(" Error ใน _accessRequest: $e");
-    return (
-      isError: true,
-      data: "",
-      errorMessage: "เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว: $e",
-    );
+      return (
+        isError: true,
+        data: "",
+        errorMessage: json["errorMessage"]?.toString() ?? "ขอสิทธิ์ไม่สำเร็จ",
+      );
+    } catch (e) {
+      print(" Error ใน _accessRequest: $e");
+      return (
+        isError: true,
+        data: "",
+        errorMessage: "เชื่อมต่อเซิร์ฟเวอร์ล้มเหลว: $e",
+      );
+    }
   }
-}
 
   Future<void> _checkTokenAndStatus() async {
     try {
@@ -277,9 +282,7 @@ class _CusorderState extends State<Cusorder> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text("ยืนยันการขอเปิดโต๊ะ"),
-        content: Text(
-          'ต้องการยืนยันการขอเปิดโต๊ะ "$tableNumber" ใช่หรือไม่?',
-        ),
+        content: Text('ต้องการยืนยันการขอเปิดโต๊ะ "$tableNumber" ใช่หรือไม่?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -329,6 +332,124 @@ class _CusorderState extends State<Cusorder> {
         print("Error updating advice status: $e");
       }
     }
+  }
+
+  Future<void> _loadSavedIdentity() async {
+  final prefss = await SharedPreferences.getInstance();
+
+  String? deviceId = prefss.getString('client_device_id');
+  if (deviceId == null || deviceId.isEmpty) {
+    deviceId = const Uuid().v4();
+    await prefss.setString('client_device_id', deviceId);
+  }
+
+  
+  final String? savedName = prefss.getString('saved_nickname');
+
+  if (mounted) {
+    setState(() {
+      _driveID = deviceId;
+      _name = savedName;
+    });
+
+    
+  }
+}
+
+  Future<void> _createname() async {
+    final TextEditingController nameController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.person_pin, color: Colors.blueAccent),
+              SizedBox(width: 8),
+              Text(
+                'ระบุชื่อของคุณ',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'กรุณาระบุชื่อเล่นเพื่อใช้แยกรายการออเดอร์ในโต๊ะ',
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: nameController,
+                  autofocus: true,
+                  maxLength: 20,
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    prefixIcon: const Icon(Icons.edit),
+                    counterText: '',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'กรุณากรอกชื่อก่อนเริ่มสั่งอาหาร';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  final enteredName = nameController.text.trim();
+                  final prefss = await SharedPreferences.getInstance();
+
+                  String? currentDeviceId = prefss.getString(
+                    'client_device_id',
+                  );
+                  if (currentDeviceId == null || currentDeviceId.isEmpty) {
+                    currentDeviceId = const Uuid().v4();
+                    await prefss.setString('client_device_id', currentDeviceId);
+                  }
+                  await prefss.setString('saved_nickname', enteredName);
+
+                  if (mounted) {
+                    setState(() {
+                      _name = enteredName;
+                      _driveID = currentDeviceId;
+                    });
+
+                    Navigator.of(dialogContext).pop();
+                    Navigator.pushReplacementNamed(context, '/menucus');
+                  }
+                }
+              },
+              child: const Text('ตกลง'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -438,18 +559,26 @@ class _CusorderState extends State<Cusorder> {
     }
 
     if (_tableStatusId == 'N') {
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, '/menucus');
+      if (_name == null || _name!.trim().isEmpty || _driveID == null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _createname();
+          }
+        });
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          print(_name);
+          print(_driveID);
+          Navigator.pushReplacementNamed(context, '/menucus');
+        }
+      });
+
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-  });
 
-  return const Scaffold(
-    body: Center(child: CircularProgressIndicator()),
-  );
-}
-
-    // Fallback กรณีไม่ตรงกับเงื่อนไขใดเลย
     return const Scaffold(
       body: Center(child: Text('ไม่พบข้อมูลสถานะโต๊ะที่ถูกต้อง')),
     );
