@@ -21,7 +21,6 @@ import 'package:cafa_boardgame/cusorder/menu.dart';
 import 'customer_guard.dart';
 import 'staff_guard.dart';
 import 'package:cafa_boardgame/salereport/salereport.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:cafa_boardgame/createboardgame/create_boardgame.dart';
 import 'package:cafa_boardgame/reportboardgame/report_boardgame.dart';
 
@@ -86,7 +85,7 @@ class MyApp extends StatelessWidget {
         '/reports': (context) => const StaffRouteGuard(child: ReportMainPage()),
         '/salereports': (context) => const StaffRouteGuard(child: Salereport()),
         '/createboardgame': (context) => const StaffRouteGuard(child: Createboardgame()),
-        '/ReportBoardgameType': (context) => const StaffRouteGuard(child: reportboardgame()),
+        '/ReportBoardgame': (context) => const StaffRouteGuard(child: reportboardgame()),
         '/emp': (context) => const StaffRouteGuard(child: Employee()),
         '/table': (context) => const StaffRouteGuard(child: Teble()),
         '/tablereq': (context) => const StaffRouteGuard(child: Tablereq()),

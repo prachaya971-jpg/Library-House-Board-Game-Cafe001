@@ -7,7 +7,7 @@ import 'package:cafa_boardgame/config/app_config.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
-
+import 'package:http/http.dart' as http;
 
 class ReportBoardgameforborrow extends StatefulWidget {
   final int? roleId;
@@ -35,9 +35,9 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
   void initState() {
     super.initState();
     _loadRole();
+    _fetchbgborrow();
     _fetchTypes();
   }
-  
 
   void _filterboardgameborrow(String query) {
     setState(() {
@@ -54,18 +54,53 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
     });
   }
 
-  //คำสั่งสร้าง Qrcode
-Widget buildQrCode(dynamic qr) {
-  final String qrdata = qr.toString();
+  // สำหรับดึงประเภทบอร์ดเกม
+  Future<void> _fetchTypes() async {
+    try {
+      final response = await AppAPI.get('/boardgame/report-type');
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        if (!json['isError']) {
+          setState(() {
+            _typesList = json['data'] ?? [];
+          });
+        }
+      }
+    } catch (e) {
+      print("Error fetching types: $e");
+    }
+  }
 
-  return QrImageView(
-    data: qrdata,                   
-    version: QrVersions.auto,       
-    size: 200.0,                    
-    backgroundColor: Colors.white,  
-    errorCorrectionLevel: QrErrorCorrectLevel.M, 
-  );
-}
+  // คำสั่งสำหรับเลือกรูปภาพจาก Gallery
+  Future<void> _pickImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+      if (image != null) {
+        final Uint8List bytes = await image.readAsBytes();
+        setState(() {
+          _pickedXFile = image;
+          _imageBytes = bytes;
+        });
+      }
+    } catch (e) {
+      print("Error picking image: $e");
+    }
+  }
+
+  //คำสั่งสร้าง Qrcode
+  Widget buildQrCode(dynamic qr) {
+    final String qrdata = qr.toString();
+
+    return QrImageView(
+      data: qrdata,
+      version: QrVersions.auto,
+      size: 200.0,
+      backgroundColor: Colors.white,
+      errorCorrectionLevel: QrErrorCorrectLevel.M,
+    );
+  }
 
   Future<void> _loadRole() async {
     if (widget.roleId != null) {
@@ -90,8 +125,11 @@ Widget buildQrCode(dynamic qr) {
   void _showDetailDialog(Map<String, dynamic> item) {
     final String? imgName = item['img_game_play'] ?? item['borrow_img'];
 
+    final String baseUrl = AppConfig.apiBaseUri
+        .replaceAll('/api', '')
+        .replaceAll(RegExp(r'/$'), '');
     final String imagepath = imgName != null && imgName.isNotEmpty
-        ? '${AppConfig.apiBaseUri.replaceAll('/api', '')}/img/borrow/$imgName'
+        ? '$baseUrl/img/borrow/$imgName'
         : '';
 
     final String qrcodedata = item['bgp_id'].toString();
@@ -198,9 +236,7 @@ Widget buildQrCode(dynamic qr) {
                 ),
 
                 const SizedBox(height: 16),
-                const SizedBox(
-                  height: 20,
-                ),
+                const SizedBox(height: 20),
                 // ข้อความ
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,7 +285,7 @@ Widget buildQrCode(dynamic qr) {
                         ),
                         Expanded(
                           child: Text(
-                                item['quantity'] .toString(),
+                            item['quantity'].toString(),
                             style: const TextStyle(color: Colors.black87),
                           ),
                         ),
@@ -268,17 +304,15 @@ Widget buildQrCode(dynamic qr) {
                         ),
                         Expanded(
                           child: Text(
-                            item['catagorylist'] ??
-                                'แกเป็นตัวอะไรเนี่ย',
+                            item['catagorylist'] ?? 'ไม่ทราบประเภท',
                             style: const TextStyle(color: Colors.black87),
                           ),
                         ),
                       ],
                     ),
-                    
                   ],
                 ),
-                buildQrCode([qrcodedata])
+                buildQrCode([qrcodedata]),
               ],
             ),
           ),
@@ -287,9 +321,7 @@ Widget buildQrCode(dynamic qr) {
     );
   }
 
-
-
-  Future<void> _fetchTypes() async {
+  Future<void> _fetchbgborrow() async {
     setState(() => _isLoading = true);
     try {
       final response = await AppAPI.get('/boardgame/report-bgborrow');
@@ -321,169 +353,334 @@ Widget buildQrCode(dynamic qr) {
       text: item['quantity']?.toString() ?? '0',
     );
 
-    final bool? confirm = await showDialog<bool>(
+    _pickedXFile = null;
+    _imageBytes = null;
+
+    String currentCatStr = item['catagorylist']?.toString() ?? '';
+    List<String> currentCatNames = currentCatStr
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .toList();
+
+    List<bool> dialogCheckboxValues = List<bool>.generate(_typesList.length, (
+      index,
+    ) {
+      final typeItem = _typesList[index];
+      final String typeName = (typeItem['catagory_bg_name'] ?? '')
+          .toString()
+          .trim()
+          .toLowerCase();
+      return currentCatNames.contains(typeName);
+    });
+
+    final dynamic confirm = await showDialog<dynamic>(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('แก้ไขข้อมูลบอร์ดเกม'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'ชื่อ',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    hintText: 'กรอกชื่อบอร์ดเกม',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-                
-                const SizedBox(height: 16),
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            if (dialogCheckboxValues.length != _typesList.length) {
+              dialogCheckboxValues = List<bool>.generate(_typesList.length, (
+                index,
+              ) {
+                final typeItem = _typesList[index];
+                final String typeName = (typeItem['catagory_bg_name'] ?? '')
+                    .toString()
+                    .trim()
+                    .toLowerCase();
+                return currentCatNames.contains(typeName);
+              });
+            }
 
-                const Text(
-                  'จำนวน',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+            return AlertDialog(
+              title: const Text('แก้ไขข้อมูลบอร์ดเกม'),
+              content: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.8 > 500
+                    ? 500
+                    : MediaQuery.of(context).size.width * 0.8,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'ชื่อ',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: nameController,
+                        decoration: InputDecoration(
+                          hintText: 'กรอกชื่อบอร์ดเกม',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'จำนวน',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: quantityController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: 'กรอกจำนวน',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            await _pickImage();
+                            setDialogState(() {});
+                          },
+                          icon: const Icon(Icons.image, color: Colors.black87),
+                          label: Text(
+                            _pickedXFile == null
+                                ? 'เลือกรูปภาพ'
+                                : 'เปลี่ยนรูปภาพ',
+                            style: const TextStyle(color: Colors.black87),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey[200],
+                            elevation: 0,
+                          ),
+                        ),
+                      ),
+                      if (_pickedXFile != null && _imageBytes != null) ...[
+                        const SizedBox(height: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Image.memory(
+                                  _imageBytes!,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              _pickedXFile!.name,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                                fontStyle: FontStyle.italic,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      const Text(
+                        'ประเภทบอร์ดเกม',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // 💡 เปลี่ยนจาก ListView.builder ซ้อนเดี่ยว มาใช้ Column.generate เพื่อป้องกัน Layout Crash
+                      if (_typesList.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else
+                        Column(
+                          children: List.generate(_typesList.length, (index) {
+                            final typeItem = _typesList[index];
+                            final isSelected = dialogCheckboxValues[index];
+                            final String typeName =
+                                typeItem['catagory_bg_name'] ?? '';
+
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: isSelected
+                                      ? Colors.blue
+                                      : Colors.grey.shade300,
+                                  width: 1.5,
+                                ),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: CheckboxListTile(
+                                value: isSelected,
+                                onChanged: (bool? value) {
+                                  setDialogState(() {
+                                    dialogCheckboxValues[index] =
+                                        value ?? false;
+                                  });
+                                },
+                                title: Text(
+                                  typeName,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                controlAffinity:
+                                    ListTileControlAffinity.leading,
+                                activeColor: Colors.blue,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 0,
+                                ),
+                                dense: true,
+                              ),
+                            );
+                          }),
+                        ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: quantityController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    hintText: 'กรอกจำนวน',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
-                    ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    FocusScope.of(context).unfocus();
+                    Navigator.pop(context, null);
+                  },
+                  child: const Text(
+                    'ยกเลิก',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD49A32),
+                  ),
+                  onPressed: () {
+                    FocusScope.of(context).unfocus();
+
+                    List<int> selectedCategoryId = [];
+                    for (int i = 0; i < _typesList.length; i++) {
+                      if (i < dialogCheckboxValues.length &&
+                          dialogCheckboxValues[i]) {
+                        final catId =
+                            _typesList[i]['catagory_bg_id'] ??
+                            _typesList[i]['boardgame_type_id'];
+                        if (catId != null) {
+                          selectedCategoryId.add(int.parse(catId.toString()));
+                        }
+                      }
+                    }
+                    Navigator.pop(context, selectedCategoryId);
+                  },
+                  child: const Text(
+                    'บันทึก',
+                    style: TextStyle(color: Colors.white),
                   ),
                 ),
               ],
-            ),
-          ),
-          // ปุ่มเลือก/เปลี่ยนรูปภาพ
-          Align(
-            alignment: Alignment.centerLeft,
-            child: ElevatedButton.icon(
-              onPressed: _pickImage,
-              icon: const Icon(Icons.image, color: Colors.black87),
-              label: Text(
-                _pickedXFile == null ? 'เลือกรูปภาพ' : 'เปลี่ยนรูปภาพ',
-                style: const TextStyle(color: Colors.black87),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[200],
-                elevation: 0,
-              ),
-            ),
-          ),
-
-          if (_pickedXFile != null && _imageBytes != null) ...[
-            const SizedBox(height: 12),
-            Builder(
-              builder: (context) {
-                double imageSize = MediaQuery.of(context).size.width * 0.010;
-                if (imageSize < 60) imageSize = 60;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        width: imageSize,
-                        height: imageSize,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Image.memory(_imageBytes!, fit: BoxFit.cover),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _pickedXFile!.name,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                        fontStyle: FontStyle.italic,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
-          const SizedBox(height: 30),
-          
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('ยกเลิก', style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD49A32),
-              ),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text(
-                'บันทึก',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
+            );
+          },
         );
       },
     );
 
-    if (confirm == true) {
+    if (confirm != null && confirm is List<int>) {
       final newName = nameController.text.trim();
       final newQuantity = int.tryParse(quantityController.text.trim()) ?? 0;
-      
+      final List<int> selectedCategoryId = confirm;
+
       if (newName.isNotEmpty) {
-        _updateType(bgborrowid, newName, newQuantity);
+        _updateType(
+          bgborrowid,
+          newName,
+          newQuantity,
+          selectedCategoryId,
+          imageFile: _pickedXFile,
+          imageBytes: _imageBytes,
+        );
       }
     }
   }
 
-  // ส่ง API แก้ไขข้อมูล (ยังไม่แก้ รอทำ database ให้เสร็จก่อน)
-  Future<void> _updateType(int id, String newName, int newQuantity) async {
+  // ส่ง API แก้ไขข้อมูล
+  Future<void> _updateType(
+    int id,
+    String newName,
+    int newQuantity,
+    List<int> selectedCategoryId, {
+    XFile? imageFile,
+    Uint8List? imageBytes,
+  }) async {
     try {
-      final response = await AppAPI.post('/boardgame/update-type', {
-        'boardgame_type_id': id,
-        'bgp_name': newName,
-      });
+      final uri = Uri.parse(
+        '${AppConfig.apiBaseUri}/boardgame/update-bgborrow',
+      );
+      final request = http.MultipartRequest('POST', uri);
 
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      request.fields['bgp_id'] = id.toString();
+      request.fields['bgp_name'] = newName;
+      request.fields['quantity'] = newQuantity.toString();
+      request.fields['category_id'] = jsonEncode(selectedCategoryId);
+
+      if (imageBytes != null && imageFile != null) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'borrow_img',
+            imageBytes,
+            filename: imageFile.name,
+          ),
+        );
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
       final jsonRes = jsonDecode(response.body);
+
       if (response.statusCode == 200 && !jsonRes['isError']) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('แก้ไขข้อมูลสำเร็จ')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('แก้ไขข้อมูลบอร์ดเกมสำเร็จ')),
+          );
         }
-        _fetchTypes();
+        _fetchbgborrow();
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -545,7 +742,7 @@ Widget buildQrCode(dynamic qr) {
             context,
           ).showSnackBar(const SnackBar(content: Text('ลบข้อมูลสำเร็จ')));
         }
-        _fetchTypes();
+        _fetchbgborrow();
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -653,7 +850,7 @@ Widget buildQrCode(dynamic qr) {
               ),
               const SizedBox(width: 8),
               IconButton(
-                onPressed: _fetchTypes,
+                onPressed: _fetchbgborrow,
                 icon: const Icon(Icons.refresh, color: Colors.grey),
                 tooltip: 'รีเฟรชข้อมูล',
               ),
@@ -680,12 +877,13 @@ Widget buildQrCode(dynamic qr) {
                   itemCount: _filteredboardgameborrow.length,
                   itemBuilder: (context, index) {
                     final item = _filteredboardgameborrow[index];
-                    final String typeName =
-                        item['bgp_name'] ??
-                        // item['img_game_play'] ??
-                        '';
+                    final String typeName = item['bgp_name'] ?? '';
                     final String? imgicon =
-                        item['img_game_play'] ;
+                        item['img_game_play'] ?? item['borrow_img'];
+
+                    final String baseUrl = AppConfig.apiBaseUri
+                        .replaceAll('/api', '')
+                        .replaceAll(RegExp(r'/$'), '');
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 10),
@@ -704,7 +902,7 @@ Widget buildQrCode(dynamic qr) {
                           borderRadius: BorderRadius.circular(8),
                           child: imgicon != null && imgicon.isNotEmpty
                               ? Image.network(
-                                  '${AppConfig.apiBaseUri.replaceAll('/api', '')}/img/borrow/$imgicon',
+                                  '$baseUrl/img/borrow/$imgicon',
                                   width: 48,
                                   height: 48,
                                   fit: BoxFit.cover,
@@ -724,44 +922,14 @@ Widget buildQrCode(dynamic qr) {
                             ? Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: ElevatedButton(
-                                      onPressed: () => _showDetailDialog(item),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color.fromARGB(
-                                          255,
-                                          210,
-                                          222,
-                                          208,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 36,
-                                          vertical: 12,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          side: const BorderSide(
-                                            color: Color.fromARGB(
-                                              255,
-                                              46,
-                                              46,
-                                              46,
-                                            ),
-                                            width: 1,
-                                          ),
-                                        ),
-                                      ),
-                                      child: const Text(
-                                        'ดูรายละเอียด',
-                                        style: TextStyle(
-                                          color: Color.fromARGB(255, 5, 5, 5),
-                                          fontSize: 16,
-                                        ),
-                                      ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.visibility,
+                                      color: Colors.blue,
+                                      size: 20,
                                     ),
+                                    onPressed: () => _showDetailDialog(item),
+                                    tooltip: 'ดูรายละเอียด',
                                   ),
                                   IconButton(
                                     icon: const Icon(
@@ -790,6 +958,7 @@ Widget buildQrCode(dynamic qr) {
       ),
     );
   }
+
   Widget _buildDefaultAvatar(int index) {
     return CircleAvatar(
       backgroundColor: Colors.amber.shade100,
@@ -803,4 +972,3 @@ Widget buildQrCode(dynamic qr) {
     );
   }
 }
-

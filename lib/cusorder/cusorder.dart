@@ -245,6 +245,7 @@ class _CusorderState extends State<Cusorder> {
         return;
       }
 
+// ดึง token โต้ะลูกค้า
       final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
       final String? tableStatusId = decodedToken['table_status_id']?.toString();
       final String? tableNumber =

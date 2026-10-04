@@ -183,7 +183,7 @@ void dispose() {
       ),
       SidebarMenuItem(
         title: "รายงานข้อมูลบอร์ดเกม",
-        targetScreen: '/ReportBoardgameType',
+        targetScreen: '/ReportBoardgame',
         allowedRoles: [1, 2],
       ),
       SidebarMenuItem(

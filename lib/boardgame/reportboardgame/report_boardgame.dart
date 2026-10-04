@@ -22,9 +22,6 @@ class _ReportboardgamePageState extends State<reportboardgame> {
   //  รายการประเภทรายงาน/รายการข้อมูลระบบ
   final List<Map<String, String>> _reportOptions = [
     {'label': 'รายการประเภทบอร์ดเกม (Type)', 'value': 'type'},
-    // {'label': 'รายการท็อปปิ้ง/ตัวเลือก (Options)', 'value': 'option'},
-    // {'label': 'รายการประเภท (Types)', 'value': 'type'},
-    // {'label': 'รายการอาหาร (Foods)', 'value': 'food'},
   ];
 
   @override
