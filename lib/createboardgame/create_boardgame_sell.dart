@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -17,8 +16,6 @@ class CreateBoardgameSell extends StatefulWidget {
 
 class _CreateBoardgameSellState extends State<CreateBoardgameSell> {
   final TextEditingController _sellboardgamenameController =
-      TextEditingController();
-  final TextEditingController _sellboardgamequantityController =
       TextEditingController();
   final TextEditingController _sellboardgamepriceController =
       TextEditingController();
@@ -78,7 +75,6 @@ class _CreateBoardgameSellState extends State<CreateBoardgameSell> {
 
   Future<void> _submitboardgamecreate() async {
     final String sellboardgamename = _sellboardgamenameController.text.trim();
-    final String sellboardgamequantity = _sellboardgamequantityController.text.trim();
     final double? sellboardgameprice = double.tryParse(_sellboardgamepriceController.text.trim());
     final String sellboardgamebarcode = _sellboardgamebarcodeController.text.trim();
 
@@ -89,26 +85,12 @@ class _CreateBoardgameSellState extends State<CreateBoardgameSell> {
       return;
     }
 
-    if (sellboardgamequantity.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('กรุณากรอกจำนวน')));
-      return;
-    }
     if (sellboardgameprice == null ) {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text('กรุณากรอกราคา')));
           return;
         }
-
-    final int? quantity = int.tryParse(sellboardgamequantity);
-    if (quantity == null || quantity < 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('กรุณากรอกจำนวนด้วยตัวเลขจำนวนเต็ม')),
-      );
-      return;
-    }
 
     final int? barcode = int.tryParse(sellboardgamebarcode);
     if (barcode == null || barcode < 0) {
@@ -124,7 +106,7 @@ class _CreateBoardgameSellState extends State<CreateBoardgameSell> {
         return AlertDialog(
           title: const Text('ยืนยันการเพิ่มข้อมูล'),
           content: Text(
-            'คุณต้องการเพิ่มบอร์ดเกมชื่อ "$sellboardgamename" (จำนวน $quantity, ราคา $sellboardgameprice) ใช่หรือไม่?',
+            'คุณต้องการเพิ่มบอร์ดเกมชื่อ "$sellboardgamename" (ราคา $sellboardgameprice) ใช่หรือไม่?',
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -167,7 +149,6 @@ class _CreateBoardgameSellState extends State<CreateBoardgameSell> {
       }
 
       request.fields['boardgame_sell_name'] = sellboardgamename;
-      request.fields['boardgame_sell_quantity'] = quantity.toString();
       request.fields['boardgame_sell_price'] = sellboardgameprice.toString();
       request.fields['boardgame_sell_barcode'] = sellboardgamebarcode;
 
@@ -205,7 +186,6 @@ class _CreateBoardgameSellState extends State<CreateBoardgameSell> {
             context,
           ).showSnackBar(const SnackBar(content: Text('เพิ่มบอร์ดเกมสำเร็จ')));
           _sellboardgamenameController.clear();
-          _sellboardgamequantityController.clear();
           _sellboardgamepriceController.clear();
           _sellboardgamebarcodeController.clear();
           setState(() {
@@ -279,32 +259,6 @@ class _CreateBoardgameSellState extends State<CreateBoardgameSell> {
             controller: _sellboardgamenameController,
             decoration: InputDecoration(
               hintText: 'ระบุชื่อบอร์ดเกม',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          const Text(
-            'จำนวน',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _sellboardgamequantityController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: false),
-            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'\d'))],
-            decoration: InputDecoration(
-              hintText: 'ระบุจำนวน',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
