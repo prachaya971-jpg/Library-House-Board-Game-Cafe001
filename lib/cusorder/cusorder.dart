@@ -250,6 +250,7 @@ class _CusorderState extends State<Cusorder> {
         return;
       }
 
+// ดึง token โต้ะลูกค้า
       final Map<String, dynamic> decodedToken = JwtDecoder.decode(token);
       final String? tableStatusId = decodedToken['table_status_id']?.toString();
       final String? tableNumber =
@@ -498,7 +499,7 @@ class _CusorderState extends State<Cusorder> {
                 const Icon(Icons.lock_outline, color: Colors.orange, size: 60),
                 const SizedBox(height: 16),
                 const Text(
-                  'กรุณากดปุ่มเพื่อส่งคำขอเปิดโต๊ะให้พนักงาน',
+                  'กรุณากดปุ่มเพื่อส่งคำขอเเนะนำ',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
@@ -508,7 +509,7 @@ class _CusorderState extends State<Cusorder> {
                     _markreq(_currentTable);
                   },
                   icon: const Icon(Icons.send_rounded),
-                  label: const Text('ส่งคำขอเปิดโต๊ะ'),
+                  label: const Text('ส่งคำขอเเนะนำ'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,

@@ -4,6 +4,7 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import '../app_sidebar.dart';
 import 'dart:convert';
 import 'package:cafa_boardgame/utils/appapi.dart';
+import 'package:cafa_boardgame/socket_service.dart';
 
 class OrderScreen extends StatefulWidget {
   const OrderScreen({Key? key}) : super(key: key);
@@ -16,12 +17,30 @@ class _OrderScreenState extends State<OrderScreen> {
   int roleId = 1;
   List<dynamic> _adviceList = [];
   bool _isLoading = true;
+  late final void Function(dynamic) _tablereqHandler;
 
   @override
   void initState() {
     super.initState();
     _loadRoleFromToken();
     _fetchAdvices();
+
+    _tablereqHandler = (data) {
+      print("[Tablereq Screen] Real-time Triggered");
+      if (mounted) _fetchAdvices();
+    };
+
+     _bindSocketListener();
+
+  }
+
+  void _bindSocketListener() {
+    final socket = SocketService().socket;
+    if (socket != null) {
+      socket.off('new_advice_request', _tablereqHandler);
+      socket.on('new_advice_request', _tablereqHandler);
+      if (!socket.connected) socket.connect();
+    }
   }
 
   Future<void> _fetchAdvices() async {
@@ -131,6 +150,11 @@ class _OrderScreenState extends State<OrderScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    SocketService().socket?.off('new_advice_request', _tablereqHandler);
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(

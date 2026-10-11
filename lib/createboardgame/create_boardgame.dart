@@ -6,6 +6,8 @@ import '../app_sidebar.dart';
 // import 'createoption.dart';
 // import 'createtype.dart';
 import 'create_boardgametype.dart';
+import 'create_boardgame_borrow.dart';
+import 'create_boardgame_sell.dart';
 
 class Createboardgame extends StatefulWidget {
   const Createboardgame({Key? key}) : super(key: key);
@@ -20,8 +22,8 @@ class _CreateboardgameState extends State<Createboardgame> {
 
   final List<Map<String, String>> _createboardgameOptions = [
     {'label': 'เพิ่มประเภทบอร์ดเกม (type)', 'value': 'type'},
-    {'label': 'เพิ่มข้อมูลบอร์ดเกม (boardgame)', 'value': 'boardgame'},
-    // {'label': 'เพิ่มซีรีย์บอร์ดเกม (series)', 'value': 'series'},
+    {'label': 'เพิ่มข้อมูลบอร์ดเกมสำหรับเล่น (borrow boardgame)', 'value': 'borrow_boardgame'},
+    {'label': 'เพิ่มข้อมูลบอร์ดเกมสำหรับขาย (sell)', 'value': 'sell_boardgame'},
   ];
 
   @override
@@ -46,13 +48,10 @@ class _CreateboardgameState extends State<Createboardgame> {
     switch (_selectedCreateType) {
       case 'type':
         return const CreateBoardgametype();
-      case 'boardgame':
-        return const Center(
-          child: Padding(
-            padding: EdgeInsets.all(32.0),
-            child: Text('กำลังพัฒนา'),
-          ),
-        );
+      case 'borrow_boardgame':
+        return const CreateBoardgameBorrow();
+      case 'sell_boardgame':
+        return const CreateBoardgameSell();
       default:
         return const SizedBox.shrink();
     }

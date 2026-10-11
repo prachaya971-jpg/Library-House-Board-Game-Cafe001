@@ -1,10 +1,10 @@
 
 import 'package:cafa_boardgame/home.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+// import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cafa_boardgame/config/app_config.dart';
+// import 'package:cafa_boardgame/config/app_config.dart';
 import 'menu_item_model.dart';
 import 'package:cafa_boardgame/order/advice.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
@@ -33,6 +33,7 @@ class _AppSidebarState extends State<AppSidebar> {
   int _tableRequestCount = 0;
   late final void Function(dynamic) _sidebarTableHandler;
   late final void Function(dynamic) _sidebarOrderHandler;
+  late final void Function(dynamic) _sidebarAdviceHandler;
 
 
   @override
@@ -50,8 +51,9 @@ class _AppSidebarState extends State<AppSidebar> {
       if (mounted) _fetchOrderCount();
     };
 
-    
-    
+    _sidebarAdviceHandler = (data) {
+      if (mounted) _fetchAdviceCount();
+    };
 
      _bindSidebarSocket();
   }
@@ -68,6 +70,9 @@ class _AppSidebarState extends State<AppSidebar> {
       socket.off('new_order', _sidebarOrderHandler);
       socket.on('new_order', _sidebarOrderHandler);
 
+
+      socket.off('new_advice_request', _sidebarAdviceHandler);
+      socket.on('new_advice_request', _sidebarAdviceHandler);
 
       if (!socket.connected) socket.connect();
     }
@@ -148,6 +153,7 @@ class _AppSidebarState extends State<AppSidebar> {
 @override
 void dispose() {
   SocketService().socket?.off('new_table_request', _sidebarTableHandler);
+  SocketService().socket?.off('new_advice_request', _sidebarAdviceHandler);
   SocketService().socket?.off('new_order',_sidebarOrderHandler);
   super.dispose();
 }
@@ -195,7 +201,7 @@ void dispose() {
       ),
       SidebarMenuItem(
         title: "รายงานข้อมูลบอร์ดเกม",
-        targetScreen: '/ReportBoardgameType',
+        targetScreen: '/ReportBoardgame',
         allowedRoles: [1, 2],
       ),
       SidebarMenuItem(
@@ -228,7 +234,7 @@ void dispose() {
             padding: const EdgeInsets.symmetric(vertical: 30),
             alignment: Alignment.center,
             child: const Text(
-              "Liberty boardgame",
+              "Library boardgame",
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,

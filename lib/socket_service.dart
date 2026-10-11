@@ -74,6 +74,11 @@ class SocketService {
       print(" SocketService ได้รับออเดอร์ใหม่: $data");
       _tableRequestStreamController.add(data);
     });
+
+    _socket!.on('new_advice_request', (data) {
+      print(" SocketService ได้รับคำขอคำเเนะนำใหม่: $data");
+      _tableRequestStreamController.add(data);
+    });
   }
 
   void joinTableRoom(String tableNumber) {

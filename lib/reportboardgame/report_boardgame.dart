@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../../app_sidebar.dart';
 import 'report_boardgame_type.dart';
+import 'report_boardgame_borrow.dart';
+import 'report_boardgame_sell.dart';
 // import '../app_sidebar.dart';
 // import 'listvariants.dart';
 // import 'listoption.dart';
@@ -22,9 +24,8 @@ class _ReportboardgamePageState extends State<reportboardgame> {
   //  รายการประเภทรายงาน/รายการข้อมูลระบบ
   final List<Map<String, String>> _reportOptions = [
     {'label': 'รายการประเภทบอร์ดเกม (Type)', 'value': 'type'},
-    // {'label': 'รายการท็อปปิ้ง/ตัวเลือก (Options)', 'value': 'option'},
-    // {'label': 'รายการประเภท (Types)', 'value': 'type'},
-    // {'label': 'รายการอาหาร (Foods)', 'value': 'food'},
+    {'label': 'รายการบอร์ดเกมสำหรับยืม (boardgame for borrow)', 'value': 'boardgame_borrow'},
+    {'label': 'รายการบอร์ดเกมสำหรับขาย (boardgame for sell)', 'value': 'boardgame_sell'}
   ];
 
   @override
@@ -47,19 +48,12 @@ class _ReportboardgamePageState extends State<reportboardgame> {
 
   Widget _buildSelectedReport() {
     switch (_selectedReportType) {
-      // case 'variants':
-      //   return const ListVariants(); 
-      // case 'option':
-      //   return const ListOptions();
       case 'type':
         return const  ReportBoardgameType();
-      case 'food':
-        return const Center(
-          child: Padding(
-            padding: EdgeInsets.all(32.0),
-            child: Text('รายงานข้อมูลระบบอาหาร'),
-          ),
-        );
+      case 'boardgame_borrow':
+        return const ReportBoardgameforborrow();
+      case 'boardgame_sell':
+        return const ReportBoardgameforsell();
       default:
         return const SizedBox.shrink();
     }

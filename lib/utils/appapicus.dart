@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:cafa_boardgame/config/app_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+
 class AppAPICUS {
 
   static String get baseUri => AppConfig.apicusBaseUri;

@@ -9,6 +9,8 @@ import 'createfood/create.dart';
 import 'reportfood/report.dart';
 import 'salereport/salereport.dart';
 import 'createboardgame/create_boardgame.dart';
+// import 'package:cafa_boardgame/order/raelorder.dart';
+import 'bg_borrow_report/bg_borrow_report_page.dart';
 import 'reportboardgame/report_boardgame.dart';
 import 'employee/reportemp.dart';
 import 'teble/table.dart';
@@ -18,6 +20,9 @@ import 'socket_service.dart';
 import 'package:cafa_boardgame/cusorder/menu.dart';
 import 'customer_guard.dart';
 import 'staff_guard.dart';
+import 'package:cafa_boardgame/salereport/salereport.dart';
+import 'package:cafa_boardgame/createboardgame/create_boardgame.dart';
+import 'package:cafa_boardgame/reportboardgame/report_boardgame.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -80,7 +85,7 @@ class MyApp extends StatelessWidget {
         '/reports': (context) => const StaffRouteGuard(child: ReportMainPage()),
         '/salereports': (context) => const StaffRouteGuard(child: Salereport()),
         '/createboardgame': (context) => const StaffRouteGuard(child: Createboardgame()),
-        '/ReportBoardgameType': (context) => const StaffRouteGuard(child: reportboardgame()),
+        '/ReportBoardgame': (context) => const StaffRouteGuard(child: reportboardgame()),
         '/emp': (context) => const StaffRouteGuard(child: Employee()),
         '/table': (context) => const StaffRouteGuard(child: Teble()),
         '/tablereq': (context) => const StaffRouteGuard(child: Tablereq()),

@@ -18,11 +18,28 @@ class _ReportBoardgameTypeState extends State<ReportBoardgameType> {
   List<dynamic> _typesList = [];
   int _currentRoleId = 2; 
 
+  final TextEditingController _searchController = TextEditingController();
+  List<dynamic> _filteredboardgameborrow = [];
+
   @override
   void initState() {
     super.initState();
     _loadRole();
     _fetchTypes();
+  }
+
+  void _filterboardgametype(String query) {
+    setState(() {
+      if (query.trim().isEmpty) {
+        _filteredboardgameborrow = List.from(_typesList);
+      } else {
+        _filteredboardgameborrow = _typesList.where((bgtype) {
+          final bgtypeName = bgtype['catagory_bg_name']?.toString().toLowerCase() ?? '';
+          final searchLower = query.toLowerCase();
+          return bgtypeName.contains(searchLower);
+        }).toList();
+      }
+    });
   }
 
   Future<void> _loadRole() async {
@@ -53,6 +70,7 @@ class _ReportBoardgameTypeState extends State<ReportBoardgameType> {
         if (!json['isError']) {
           setState(() {
             _typesList = json['data'] ?? [];
+            _filteredboardgameborrow = List.from(_typesList);
           });
         }
       } else {
@@ -234,6 +252,49 @@ class _ReportBoardgameTypeState extends State<ReportBoardgameType> {
                   color: Color(0xFF2D3748),
                 ),
               ),
+               const SizedBox(width: 16),
+            
+              Expanded(
+                child: Container(
+                  height: 42,
+                  constraints: const BoxConstraints(maxWidth: 320),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'ค้นหาชื่อประเภทบอร์ดเกม...',
+                      prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 20),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                              onPressed: () {
+                                _searchController.clear();
+                                _filterboardgametype('');
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.blue, width: 1.5),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      _filterboardgametype(value);
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
               IconButton(
                 onPressed: _fetchTypes,
                 icon: const Icon(Icons.refresh, color: Colors.grey),
@@ -247,6 +308,7 @@ class _ReportBoardgameTypeState extends State<ReportBoardgameType> {
 
           // รายการข้อมูล
           _isLoading
+          
               ? const Padding(
                   padding: EdgeInsets.all(32.0),
                   child: Center(child: CircularProgressIndicator()),
@@ -259,10 +321,9 @@ class _ReportBoardgameTypeState extends State<ReportBoardgameType> {
                   : ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _typesList.length,
+                      itemCount: _filteredboardgameborrow.length,
                       itemBuilder: (context, index) {
-                        final item = _typesList[index];
-                
+                        final item = _filteredboardgameborrow[index];
                         final String typeName = item['catagory_bg_name'] ??
                             // item['type_name'] ??
                             '';
