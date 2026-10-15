@@ -516,7 +516,6 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
                       ),
                       const SizedBox(height: 8),
 
-                      // 💡 เปลี่ยนจาก ListView.builder ซ้อนเดี่ยว มาใช้ Column.generate เพื่อป้องกัน Layout Crash
                       if (_typesList.isEmpty)
                         const Padding(
                           padding: EdgeInsets.all(16.0),
