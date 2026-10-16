@@ -163,12 +163,13 @@ class _CreateBoardgameBorrowState extends State<CreateBoardgameBorrow> {
         );
       }
 
-// ลูปเอาประเภทไปส่ง backend
+      // ลูปเอาประเภทไปส่ง backend
       List<int> selectedCatagoryId = [];
       for (int i = 0; i < _typesList.length; i++) {
         if (i < _checkboxValues.length && _checkboxValues[i] == true) {
           final catId =
-              _typesList[i]['catagory_bg_id'] ?? _typesList[i]['boardgame_type_id'];
+              _typesList[i]['catagory_bg_id'] ??
+              _typesList[i]['boardgame_type_id'];
           if (catId != null) {
             selectedCatagoryId.add(int.parse(catId.toString()));
           }
@@ -361,6 +362,15 @@ class _CreateBoardgameBorrowState extends State<CreateBoardgameBorrow> {
           ],
           const SizedBox(height: 30),
 
+          const Text(
+            'ประเภท',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 30),
           //Checkbox ประเภท
           _isLoading
               ? const Center(child: CircularProgressIndicator())

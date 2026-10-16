@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:cafa_boardgame/utils/appapi.dart';
+import 'package:cafa_boardgame/socket_service.dart';
 
 class OrderCountCard extends StatefulWidget {
   const OrderCountCard({super.key});
@@ -12,11 +13,33 @@ class OrderCountCard extends StatefulWidget {
 class _OrderCountCardState extends State<OrderCountCard> {
   int _orderCount = 0;
   bool _isLoading = false;
+  late final void Function(dynamic) _cardTableHandler;
 
   @override
   void initState() {
     super.initState();
     _fetchOrderCount();
+     _cardTableHandler = (data) {
+      print(" [Reqtablecard] Real-time Triggered: ${data['table_number']}");
+      if (mounted) {
+        _fetchOrderCount();
+      }
+    };
+
+     _bindSocketListener();
+  }
+
+  void _bindSocketListener() {
+    final socket = SocketService().socket;
+
+    if (socket != null) {
+      socket.off('new_order', _cardTableHandler);
+      socket.on('new_order', _cardTableHandler);
+
+      if (!socket.connected) {
+        socket.connect();
+      }
+    }
   }
 
   Future<void> _fetchOrderCount() async {
@@ -45,6 +68,13 @@ class _OrderCountCardState extends State<OrderCountCard> {
     if (mounted) setState(() => _isLoading = false);
   }
 }
+  
+  @override
+  void dispose() {
+    SocketService().socket?.off('new_order', _cardTableHandler);
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(

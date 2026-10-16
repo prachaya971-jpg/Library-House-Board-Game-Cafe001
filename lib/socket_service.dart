@@ -10,11 +10,14 @@ class SocketService {
   IO.Socket? _socket;
   String? _currentJoinedTable;
 
-  // Stream สำหรับ Broadcast เหตุการณ์ต่างๆ
+  // Stream Controllers
+  final _tableClearedController = StreamController<Map<String, dynamic>>.broadcast();
   final _tableRequestStreamController = StreamController<dynamic>.broadcast();
   final _tableApprovedStreamController = StreamController<dynamic>.broadcast();
   final _tableRejectedStreamController = StreamController<dynamic>.broadcast();
 
+  // Streams
+  Stream<Map<String, dynamic>> get onTableCleared => _tableClearedController.stream;
   Stream<dynamic> get onTableRequest => _tableRequestStreamController.stream;
   Stream<dynamic> get onTableApproved => _tableApprovedStreamController.stream;
   Stream<dynamic> get onTableRejected => _tableRejectedStreamController.stream;
@@ -33,12 +36,22 @@ class SocketService {
           .enableReconnection()
           .build(),
     );
-
+  
     _socket!.onConnect((_) {
       print(" Connected to Socket Server: ${_socket!.id}");
       if (_currentJoinedTable != null && _currentJoinedTable!.isNotEmpty) {
         _emitJoin(_currentJoinedTable!);
       }
+    });
+
+    
+    _socket!.on('clear_customer_token', (data) {
+      print("ได้รับสัญญาณ clear_customer_token: $data");
+      Map<String, dynamic> payload = {};
+      if (data is Map) {
+        payload = Map<String, dynamic>.from(data);
+      }
+      _tableClearedController.add(payload);
     });
 
     _socket!.onReconnect((_) {
@@ -52,28 +65,36 @@ class SocketService {
       print(" Disconnected from Socket Server");
     });
 
-
     _socket!.on('new_table_request', (data) {
       print(" SocketService ได้รับคำขอใหม่: $data");
       _tableRequestStreamController.add(data);
     });
 
-   
     _socket!.on('table_approved', (data) {
       print(" SocketService ได้รับสัญญาณอนุมัติ: $data");
       _tableApprovedStreamController.add(data);
     });
 
-
     _socket!.on('table_rejected', (data) {
       print(" SocketService ได้รับสัญญาณปฏิเสธ: $data");
       _tableRejectedStreamController.add(data);
     });
+
+    _socket!.on('new_order', (data) {
+      print(" SocketService ได้รับออเดอร์ใหม่: $data");
+      _tableRequestStreamController.add(data);
+    });
+
+    _socket!.on('new_advice_request', (data) {
+      print(" SocketService ได้รับคำขอคำเเนะนำใหม่: $data");
+      _tableRequestStreamController.add(data);
+    });
   }
 
   void joinTableRoom(String tableNumber) {
-    if (tableNumber.trim().isEmpty) return;
-    _currentJoinedTable = tableNumber.trim();
+    final cleanTable = tableNumber.trim();
+    if (cleanTable.isEmpty || cleanTable == '-') return;
+    _currentJoinedTable = cleanTable;
 
     if (_socket != null && _socket!.connected) {
       _emitJoin(_currentJoinedTable!);

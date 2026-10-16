@@ -193,8 +193,10 @@ class _CreateBoardgameSellState extends State<CreateBoardgameSell> {
             _imageBytes = null;
           });
         }
-      } else {
+      } 
+      else {
         if (mounted) {
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -202,6 +204,7 @@ class _CreateBoardgameSellState extends State<CreateBoardgameSell> {
               ),
             ),
           );
+          print('Error creating option: ${jsonRes['errorMessage'] ?? 'ไม่สามารถบันทึกได้'}');
         }
       }
     } catch (e) {

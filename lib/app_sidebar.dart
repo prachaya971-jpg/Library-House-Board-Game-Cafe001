@@ -32,6 +32,9 @@ class _AppSidebarState extends State<AppSidebar> {
   int _adviceCount = 0;
   int _tableRequestCount = 0;
   late final void Function(dynamic) _sidebarTableHandler;
+  late final void Function(dynamic) _sidebarOrderHandler;
+  late final void Function(dynamic) _sidebarAdviceHandler;
+
 
   @override
   void initState() {
@@ -44,8 +47,13 @@ class _AppSidebarState extends State<AppSidebar> {
       if (mounted) _fetchTableRequestCount();
     };
 
-    
-    
+    _sidebarOrderHandler = (data) {
+      if (mounted) _fetchOrderCount();
+    };
+
+    _sidebarAdviceHandler = (data) {
+      if (mounted) _fetchAdviceCount();
+    };
 
      _bindSidebarSocket();
   }
@@ -58,6 +66,14 @@ class _AppSidebarState extends State<AppSidebar> {
       
       socket.off('new_table_request', _sidebarTableHandler);
       socket.on('new_table_request', _sidebarTableHandler);
+
+      socket.off('new_order', _sidebarOrderHandler);
+      socket.on('new_order', _sidebarOrderHandler);
+
+
+      socket.off('new_advice_request', _sidebarAdviceHandler);
+      socket.on('new_advice_request', _sidebarAdviceHandler);
+
       if (!socket.connected) socket.connect();
     }
   }
@@ -137,6 +153,8 @@ class _AppSidebarState extends State<AppSidebar> {
 @override
 void dispose() {
   SocketService().socket?.off('new_table_request', _sidebarTableHandler);
+  SocketService().socket?.off('new_advice_request', _sidebarAdviceHandler);
+  SocketService().socket?.off('new_order',_sidebarOrderHandler);
   super.dispose();
 }
 
@@ -165,6 +183,11 @@ void dispose() {
         targetScreen: '/tablereq',
         allowedRoles: [1, 2],
         badgeCount:_tableRequestCount,
+      ),
+      SidebarMenuItem(
+        title: "ชำระเงิน",
+        targetScreen: '/chenkbytable',
+        allowedRoles: [1, 2],
       ),
       SidebarMenuItem(
         title: "เพิ่มข้อมูลประเภทอาหาร",
