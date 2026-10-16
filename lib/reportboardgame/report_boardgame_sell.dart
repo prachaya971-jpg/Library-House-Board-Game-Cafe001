@@ -8,7 +8,7 @@ import 'package:barcode_widget/barcode_widget.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-
+import 'package:cafa_boardgame/createboardgame/create_boardgame_sell.dart';
 
 class ReportBoardgameforsell extends StatefulWidget {
   final int? roleId;
@@ -38,7 +38,7 @@ class _ReportBoardgameforsellState extends State<ReportBoardgameforsell> {
     _fetchTypes();
   }
 
-// สำหรับดึงประเภทบอร์ดเกม
+  // สำหรับดึงประเภทบอร์ดเกม
   Future<void> _fetchTypes() async {
     try {
       final response = await AppAPI.get('/boardgame/report-type');
@@ -55,7 +55,7 @@ class _ReportBoardgameforsellState extends State<ReportBoardgameforsell> {
     }
   }
 
-// เลือกรูปภาพจาก Gallery
+  // เลือกรูปภาพจาก Gallery
   Future<void> _pickImage() async {
     try {
       final ImagePicker picker = ImagePicker();
@@ -108,33 +108,33 @@ class _ReportBoardgameforsellState extends State<ReportBoardgameforsell> {
 
   //สร้าง barcode
   Widget buildBarcode(String barcodeNumber) {
-  if (barcodeNumber.trim().isEmpty) {
-    return const Text('ไม่มีบาร์โค้ด', style: TextStyle(color: Colors.grey));
+    if (barcodeNumber.trim().isEmpty) {
+      return const Text('ไม่มีบาร์โค้ด', style: TextStyle(color: Colors.grey));
+    }
+
+    // แยก บาร์โค้ด
+    final List<String> barcodes = barcodeNumber
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    return Column(
+      children: barcodes.map((code) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: BarcodeWidget(
+            barcode: Barcode.code128(),
+            data: code,
+            width: 250,
+            height: 80,
+            drawText: true,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+        );
+      }).toList(),
+    );
   }
-
-  // แยก บาร์โค้ด
-  final List<String> barcodes = barcodeNumber
-      .split(',')
-      .map((e) => e.trim())
-      .where((e) => e.isNotEmpty)
-      .toList();
-
-  return Column(
-    children: barcodes.map((code) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 12.0),
-        child: BarcodeWidget(
-          barcode: Barcode.code128(),
-          data: code,
-          width: 250,
-          height: 80,
-          drawText: true,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-      );
-    }).toList(),
-  );
-}
 
   // function แสดงข้อมูลของปุ่มแสดงรายละเอียด
   void _showDetailDialog(Map<String, dynamic> item) {
@@ -294,7 +294,10 @@ class _ReportBoardgameforsellState extends State<ReportBoardgameforsell> {
                           ),
                         ),
                         Text(
-                          (item['price'] ?? item['boardgame_sell_price'] ?? 'ไม่พบราคา').toString(),
+                          (item['price'] ??
+                                  item['boardgame_sell_price'] ??
+                                  'ไม่พบราคา')
+                              .toString(),
                           style: const TextStyle(color: Colors.black87),
                         ),
                       ],
@@ -365,7 +368,8 @@ class _ReportBoardgameforsellState extends State<ReportBoardgameforsell> {
   // แสดง Dialog แก้ไขรายการ
   // 2. แสดง Dialog แก้ไขรายการ
   Future<void> _showEditDialog(Map<String, dynamic> item) async {
-    final int bgsellid = item['bgsell_id'] ?? item['bg_id'] ?? item['bgs_id'] ?? 0;
+    final int bgsellid =
+        item['bgsell_id'] ?? item['bg_id'] ?? item['bgs_id'] ?? 0;
     final TextEditingController nameController = TextEditingController(
       text: item['bg_name'] ?? '',
     );
@@ -483,7 +487,9 @@ class _ReportBoardgameforsellState extends State<ReportBoardgameforsell> {
                       const SizedBox(height: 6),
                       TextField(
                         controller: priceController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'กรอกราคาขาย',
                           border: OutlineInputBorder(
@@ -668,18 +674,19 @@ class _ReportBoardgameforsellState extends State<ReportBoardgameforsell> {
       final newQuantity = int.tryParse(quantityController.text.trim()) ?? 0;
       final newPrice = double.tryParse(priceController.text.trim()) ?? 0.0;
       final List<int> selectedCategoryId = confirm;
-        if (newName.isNotEmpty) {
+      if (newName.isNotEmpty) {
         await _updateboardgamesell(
           bgId: bgsellid,
           bgName: newName,
           quantity: newQuantity,
           price: newPrice,
           categoryIds: selectedCategoryId,
-          imageFile: _pickedXFile, 
+          imageFile: _pickedXFile,
         );
       }
     }
   }
+
   // function แก้ไขข้อมูล
   Future<void> _updateboardgamesell({
     required int bgId,
@@ -714,26 +721,32 @@ class _ReportBoardgameforsellState extends State<ReportBoardgameforsell> {
       if (response.statusCode == 200) {
         final resData = jsonDecode(response.body);
         if (resData['isError'] == false) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('แก้ไขข้อมูลสำเร็จ')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('แก้ไขข้อมูลสำเร็จ')));
           _fetchbgsell();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('เกิดข้อผิดพลาด: ${resData['errorMessage']}')),
+            SnackBar(
+              content: Text('เกิดข้อผิดพลาด: ${resData['errorMessage']}'),
+            ),
           );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (${response.statusCode})')),
+          SnackBar(
+            content: Text(
+              'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (${response.statusCode})',
+            ),
+          ),
         );
       }
     } catch (e) {
       if (mounted && Navigator.canPop(context)) Navigator.pop(context);
       print("Error updating boardgame sale: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('เกิดข้อผิดพลาด: $e')));
     }
   }
 
@@ -799,6 +812,216 @@ class _ReportBoardgameforsellState extends State<ReportBoardgameforsell> {
     }
   }
 
+  // 4.แสดง dialog เพิ่มจำนวนด้วยบาร์โค้ด
+  Future<void> _showaddquantity() async {
+    final TextEditingController barcodeController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text(
+            'เพิ่มรหัสบาร์โค้ดบอร์ดเกม',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.8 > 400
+                ? 400
+                : MediaQuery.of(context).size.width * 0.8,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'รหัสบาร์โค้ด',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: barcodeController,
+                  autofocus: true,
+                  inputFormatters: [LengthLimitingTextInputFormatter(13)],
+                  decoration: InputDecoration(
+                    hintText: 'กรอกรหัสบาร์โค้ด...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                  ),
+                  onSubmitted: (value) {
+                    FocusScope.of(context).unfocus();
+                    final barcodeText = value.trim();
+                    if (barcodeText.isNotEmpty) {
+                      Navigator.pop(context, barcodeText);
+                    }
+                  },
+                  onChanged: (value) {
+                    if (value.trim().length == 13) {
+                      FocusScope.of(context).unfocus();
+                      Navigator.pop(context, value.trim());
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                FocusScope.of(context).unfocus();
+                Navigator.pop(context);
+              },
+              child: const Text('ยกเลิก', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              onPressed: () {
+                FocusScope.of(context).unfocus();
+                final barcodeText = barcodeController.text.trim();
+                Navigator.pop(
+                  context,
+                  barcodeText.isNotEmpty ? barcodeText : null,
+                );
+              },
+              child: const Text('ตกลง', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    ).then((barcode) {
+      if (barcode != null && barcode is String && barcode.isNotEmpty) {
+        _AddQuantitysell(barcode);
+      }
+    });
+  }
+
+  // ส่ง api เพิ่มจำนวน
+  Future<void> _AddQuantitysell(String barcode) async {
+    try {
+      setState(() => _isLoading = true);
+
+      final response = await AppAPI.post('/boardgame/addquantity-bgsell', {
+        'barcode': barcode,
+      });
+
+      if (response.statusCode == 200) {
+        final resData = jsonDecode(response.body);
+        if (resData['isError'] == false) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(resData['data'] ?? 'เพิ่มจำนวนบอร์ดเกมสำเร็จ'),
+              ),
+            );
+          }
+          await _fetchbgsell();
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('เกิดข้อผิดพลาด: ${resData['errorMessage']}'),
+              ),
+            );
+          }
+        }
+      } else {
+        if (mounted) {
+          _shownoaddquantity(barcode);
+        }
+      }
+    } catch (e) {
+      print("Error scanning barcode: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('เกิดข้อผิดพลาด: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // dialog กรณีเพิ่มจำนวนสินค้าไม่ได้เพราะ barcode ไม่ถูกต้อง
+  void _shownoaddquantity(String barcode) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: Row(
+            children: const [
+              SizedBox(width: 8),
+              Text(
+                'ไม่พบข้อมูลบาร์โค้ด',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.8 > 400
+                ? 400
+                : MediaQuery.of(context).size.width * 0.8,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ไม่มีข้อมูลบาร์โค้ด "$barcode" นี้ในระบบ',
+                  style: const TextStyle(fontSize: 15, color: Colors.black87),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'คุณต้องการไปยังหน้าเพิ่มข้อมูลบอร์ดเกมสำหรับขายหรือไม่?',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('ยกเลิก', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD49A32),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushReplacementNamed(
+                  context,
+                  '/createboardgame',
+                  arguments: {'initialType': 'sell_boardgame'},
+                );
+              },
+              child: const Text(
+                'ยืนยัน',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isManager = _currentRoleId == 1;
@@ -841,7 +1064,7 @@ class _ReportBoardgameforsellState extends State<ReportBoardgameforsell> {
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
-                      hintText: 'ค้นหาชื่อประเภทบอร์ดเกม...',
+                      hintText: 'ค้นหาชื่อบอร์ดเกม...',
                       prefixIcon: const Icon(
                         Icons.search,
                         color: Colors.grey,
@@ -860,6 +1083,7 @@ class _ReportBoardgameforsellState extends State<ReportBoardgameforsell> {
                               },
                             )
                           : null,
+
                       filled: true,
                       fillColor: Colors.grey.shade100,
                       contentPadding: const EdgeInsets.symmetric(
@@ -889,6 +1113,14 @@ class _ReportBoardgameforsellState extends State<ReportBoardgameforsell> {
                 ),
               ),
               const SizedBox(width: 8),
+              IconButton(
+                onPressed: () {
+                  _showaddquantity();
+                  print("กดปุ่มเพิ่มบอร์ดเกมใหม่");
+                },
+                icon: const Icon(Icons.add, color: Colors.green),
+                tooltip: 'เพิ่มจำนวนสินค้าในคลัง',
+              ),
               IconButton(
                 onPressed: _fetchbgsell,
                 icon: const Icon(Icons.refresh, color: Colors.grey),

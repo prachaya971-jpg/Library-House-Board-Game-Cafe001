@@ -185,6 +185,11 @@ void dispose() {
         badgeCount:_tableRequestCount,
       ),
       SidebarMenuItem(
+        title: "ชำระเงิน",
+        targetScreen: '/chenkbytable',
+        allowedRoles: [1, 2],
+      ),
+      SidebarMenuItem(
         title: "เพิ่มข้อมูลประเภทอาหาร",
         targetScreen: '/create',
         allowedRoles: [1],

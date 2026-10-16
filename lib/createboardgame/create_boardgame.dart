@@ -19,10 +19,14 @@ class Createboardgame extends StatefulWidget {
 class _CreateboardgameState extends State<Createboardgame> {
   int roleId = 1;
   String? _selectedCreateType;
+  bool _isInit = false;
 
   final List<Map<String, String>> _createboardgameOptions = [
     {'label': 'เพิ่มประเภทบอร์ดเกม (type)', 'value': 'type'},
-    {'label': 'เพิ่มข้อมูลบอร์ดเกมสำหรับเล่น (borrow boardgame)', 'value': 'borrow_boardgame'},
+    {
+      'label': 'เพิ่มข้อมูลบอร์ดเกมสำหรับเล่น (borrow boardgame)',
+      'value': 'borrow_boardgame',
+    },
     {'label': 'เพิ่มข้อมูลบอร์ดเกมสำหรับขาย (sell)', 'value': 'sell_boardgame'},
   ];
 
@@ -41,6 +45,21 @@ class _CreateboardgameState extends State<Createboardgame> {
       setState(() {
         roleId = decodedToken['emp_role_id'] ?? 1;
       });
+    }
+  }
+
+// สำหรับรับ nav จากระบบเพิ่มจำนวนไปหน้าเพิ่มบอร์ดเกมสำหรับขาย
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInit) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map<String, dynamic> && args.containsKey('initialType')) {
+        setState(() {
+          _selectedCreateType = args['initialType'];
+        });
+      }
+      _isInit = true;
     }
   }
 
@@ -79,7 +98,7 @@ class _CreateboardgameState extends State<Createboardgame> {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24.0),
                 physics: const AlwaysScrollableScrollPhysics(),
-                child: Center( 
+                child: Center(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     mainAxisAlignment: MainAxisAlignment.start,
@@ -96,7 +115,7 @@ class _CreateboardgameState extends State<Createboardgame> {
                               color: Colors.grey.withOpacity(0.15),
                               blurRadius: 10,
                               spreadRadius: 2,
-                            )
+                            ),
                           ],
                         ),
                         child: Column(

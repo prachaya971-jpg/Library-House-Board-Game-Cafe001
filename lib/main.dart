@@ -23,6 +23,8 @@ import 'staff_guard.dart';
 import 'package:cafa_boardgame/salereport/salereport.dart';
 import 'package:cafa_boardgame/createboardgame/create_boardgame.dart';
 import 'package:cafa_boardgame/reportboardgame/report_boardgame.dart';
+import 'package:cafa_boardgame/chenkbill/chenkbytable.dart';
+import 'CustomerDisplayScreen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -89,6 +91,8 @@ class MyApp extends StatelessWidget {
         '/emp': (context) => const StaffRouteGuard(child: Employee()),
         '/table': (context) => const StaffRouteGuard(child: Teble()),
         '/tablereq': (context) => const StaffRouteGuard(child: Tablereq()),
+        '/chenkbytable': (context) => const StaffRouteGuard(child: Chenkbytable()),
+        '/customer-display': (context) =>  CustomerDisplayScreen(),
       },
     );
   }
