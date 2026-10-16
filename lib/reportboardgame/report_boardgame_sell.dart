@@ -847,7 +847,7 @@ class _ReportBoardgameforsellState extends State<ReportBoardgameforsell> {
   }) async {
     try {
       final uri = Uri.parse('${AppConfig.apiBaseUri}/boardgame/update-bgsell');
-      final request = http.MultipartRequest('PUT', uri);
+      final request = http.MultipartRequest('POST', uri);
       request.fields['bg_id'] = bgId.toString();
       request.fields['bg_name'] = bgName;
       request.fields['price'] = price.toString();
@@ -863,6 +863,10 @@ class _ReportBoardgameforsellState extends State<ReportBoardgameforsell> {
         request.files.add(multipartFile);
       }
 
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      request.headers['Authorization'] = 'Bearer $token';
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 

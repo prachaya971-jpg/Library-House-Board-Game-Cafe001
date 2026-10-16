@@ -91,7 +91,7 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
 
   //คำสั่งสร้าง Qrcode
   Widget buildQrCode(dynamic qr) {
-    final String qrdata = qr.toString();
+    final String qrdata = "${AppConfig.apicusBaseUri}/cusborrow?borrowid=$qr";
 
     return QrImageView(
       data: qrdata,
@@ -133,6 +133,8 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
         : '';
 
     final String qrcodedata = item['bgp_id'].toString();
+
+    final String qrdata = "${AppConfig.apicusBaseUri}/cusborrow?borrowid=$qrcodedata";
 
     showDialog(
       context: context,
@@ -265,7 +267,7 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
                           ),
                         ),
                         Text(
-                          '${item['bgp_id']}',
+                          qrdata,
                           style: const TextStyle(color: Colors.black87),
                         ),
                       ],
