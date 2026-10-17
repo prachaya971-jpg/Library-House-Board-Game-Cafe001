@@ -315,7 +315,7 @@ class _ProductPageState extends State<ProductPage> {
                                       fontWeight: FontWeight.w600,
                                       color: Color(
                                         0xFFE5A93C,
-                                      ), // ใช้สีส้ม/มัสตาร์ดขับให้ราคาเด่น
+                                      ),
                                     ),
                                   ),
                                 ],

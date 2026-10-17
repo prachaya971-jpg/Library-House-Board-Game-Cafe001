@@ -10,7 +10,6 @@ import 'reportfood/report.dart';
 import 'salereport/salereport.dart';
 import 'createboardgame/create_boardgame.dart';
 // import 'package:cafa_boardgame/order/raelorder.dart';
-import 'bg_borrow_report/bg_borrow_report_page.dart';
 import 'reportboardgame/report_boardgame.dart';
 import 'employee/reportemp.dart';
 import 'teble/table.dart';
@@ -23,9 +22,10 @@ import 'staff_guard.dart';
 import 'package:cafa_boardgame/salereport/salereport.dart';
 import 'package:cafa_boardgame/createboardgame/create_boardgame.dart';
 import 'package:cafa_boardgame/reportboardgame/report_boardgame.dart';
-import 'boardgame/customerboardgame_borrow.dart';
+import 'cusorder/boardgame/customerboardgame_borrow.dart';
 import 'package:cafa_boardgame/chenkbill/chenkbytable.dart';
 import 'CustomerDisplayScreen.dart';
+import 'bg_borrow/bg_borrow_save.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,7 +48,9 @@ class MyApp extends StatelessWidget {
       ],
       supportedLocales: const [Locale('th', 'TH'), Locale('en', 'US')],
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 227, 224, 227)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color.fromARGB(255, 227, 224, 227),
+        ),
         useMaterial3: true,
       ),
       initialRoute: '/',
@@ -56,20 +58,28 @@ class MyApp extends StatelessWidget {
       onGenerateRoute: (settings) {
         final name = settings.name ?? '';
         final fragment = Uri.base.fragment;
- 
+
         if (name == '/menucus' || fragment.startsWith('/menucus')) {
-          return null; 
+          return null;
         }
 
-        if (name == '/menu' || name.startsWith('/menu?') || fragment.startsWith('/menu')) {
+        if (name == '/menu' ||
+            name.startsWith('/menu?') ||
+            fragment.startsWith('/menu')) {
           return MaterialPageRoute(
             builder: (_) => const Cusorder(),
             settings: settings,
           );
         }
-        if (name == '/cusborrow' || name.startsWith('/cusborrow?') || fragment.startsWith('/cusborrow')) {
+        if (name == '/cusborrow' ||
+            name.startsWith('/cusborrow?') ||  fragment.startsWith('/cusborrow')) {
+          final uri = Uri.parse(settings.name ?? '');
+          final borrowId = uri.queryParameters['borrowid'];
+
           return MaterialPageRoute(
-            builder: (_) => const CustomerboardgameBorrow(),
+            builder: (_) => CustomerboardgameBorrow(
+              bgborrow_id: borrowId,
+            ),
             settings: settings,
           );
         }
@@ -77,29 +87,29 @@ class MyApp extends StatelessWidget {
       },
 
       routes: {
-  
         '/': (context) => const Login(),
         '/login': (context) => const Login(),
         '/menu': (context) => const Cusorder(),
+
         // ส่วนของลูกค้า
-        
-        '/menucus': (context) => const CustomerRouteGuard(child: MenuHomeScreen(),),
+        '/menucus': (context) =>
+            const CustomerRouteGuard(child: MenuHomeScreen()),
 
-
-        // ส่วนของพนักงาน 
+        // ส่วนของพนักงาน
         '/home': (context) => const StaffRouteGuard(child: Home()),
         '/advice': (context) => const StaffRouteGuard(child: OrderScreen()),
         '/order': (context) => const StaffRouteGuard(child: OrderraelScreen()),
         '/create': (context) => const StaffRouteGuard(child: CreateMainPage()),
         '/reports': (context) => const StaffRouteGuard(child: ReportMainPage()),
         '/salereports': (context) => const StaffRouteGuard(child: Salereport()),
-        '/createboardgame': (context) => const StaffRouteGuard(child: Createboardgame()),
-        '/ReportBoardgame': (context) => const StaffRouteGuard(child: reportboardgame()),
+        '/createboardgame': (context) =>const StaffRouteGuard(child: Createboardgame()),
+        '/ReportBoardgame': (context) =>const StaffRouteGuard(child: reportboardgame()),
         '/emp': (context) => const StaffRouteGuard(child: Employee()),
         '/table': (context) => const StaffRouteGuard(child: Teble()),
         '/tablereq': (context) => const StaffRouteGuard(child: Tablereq()),
-        '/chenkbytable': (context) => const StaffRouteGuard(child: Chenkbytable()),
-        '/customer-display': (context) =>  CustomerDisplayScreen(),
+        '/chenkbytable': (context) =>const StaffRouteGuard(child: Chenkbytable()),
+        '/customer-display': (context) => CustomerDisplayScreen(),
+        '/borrowsave': (context) => const StaffRouteGuard(child: BgBorrowsave()),
       },
     );
   }
