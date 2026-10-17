@@ -1,3 +1,4 @@
+// revenue_card.dart (ปรับปรุง UI)
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
@@ -11,9 +12,8 @@ class RevenueCard extends StatefulWidget {
 }
 
 class _RevenueCardState extends State<RevenueCard> {
-  String _selectedPeriod = 'daily'; // 'daily', 'monthly', 'yearly'
-  String _selectedCategory = 'food'; // 'all', 'food', 'boardgame'
-
+  String _selectedPeriod = 'daily';
+  String _selectedCategory = 'food';
   num _totalRevenue = 0;
   bool _isLoading = false;
 
@@ -24,70 +24,73 @@ class _RevenueCardState extends State<RevenueCard> {
   }
 
   Future<void> _fetchRevenue() async {
-  setState(() => _isLoading = true);
+    setState(() => _isLoading = true);
+    try {
+      final queryString = '/reports/revenue?period=$_selectedPeriod&category=$_selectedCategory';
+      final response = await AppAPI.get(queryString);
 
-  try {
-    final queryString = '/reports/revenue?period=$_selectedPeriod&category=$_selectedCategory';
-    final response = await AppAPI.get(queryString);
-
-    if (response.statusCode == 200) {
-      final json = jsonDecode(response.body);
-
-      if (!json['isError']) {
-        setState(() {
-          var rawRevenue = json['data']['total_revenue'];
-          if (rawRevenue is num) {
-            _totalRevenue = rawRevenue;
-          } else if (rawRevenue is String) {
-            _totalRevenue = double.tryParse(rawRevenue) ?? 0;
-          } else {
-            _totalRevenue = 0;
-          }
-        });
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        if (!json['isError']) {
+          setState(() {
+            var raw = json['data']['total_revenue'];
+            _totalRevenue = (raw is num) ? raw : (double.tryParse('$raw') ?? 0);
+          });
+        }
       }
-    } else {
-      print("Server Error: ${response.statusCode}");
+    } catch (e) {
+      debugPrint("Error fetching revenue: $e");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-  } catch (e) {
-    print("Error fetching revenue: $e");
-  } finally {
-    if (mounted) setState(() => _isLoading = false);
   }
-}
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 260,
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+      width: 290,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: const Color(0xFF0F172A).withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Row บน: หัวข้อ "รายได้" และ Dropdown เลือกช่วงเวลา
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "รายได้",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1F2937),
-                ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.payments_rounded, color: Color(0xFF059669), size: 20),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    "ยอดรายได้",
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                ],
               ),
-              _buildCustomDropdown(
+              _buildMiniDropdown<String>(
                 value: _selectedPeriod,
                 items: const [
                   DropdownMenuItem(value: 'daily', child: Text("รายวัน")),
@@ -103,69 +106,84 @@ class _RevenueCardState extends State<RevenueCard> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-
-          // Dropdown เลือกประเภทรายการ
-          _buildCustomDropdown(
-            value: _selectedCategory,
-            items: const [
-              DropdownMenuItem(value: 'all', child: Text("ทั้งหมด")),
-              DropdownMenuItem(value: 'food', child: Text("อาหาร")),
-              DropdownMenuItem(value: 'boardgame', child: Text("บอร์ดเกม")),
-            ],
-            onChanged: (val) {
-              if (val != null) {
-                setState(() => _selectedCategory = val);
-                _fetchRevenue();
-              }
-            },
-          ),
           const SizedBox(height: 12),
-
-          // ตัวเลขแสดงยอดรวมรายได้
-          Center(
-            child: _isLoading
-                ? const SizedBox(
-                    height: 40,
-                    width: 40,
-                    child: CircularProgressIndicator(color: Color(0xFF6E8B7E)),
-                  )
-                : Text(
-                    NumberFormat('#,##0.00').format(_totalRevenue),
-                    style: const TextStyle(
-                      fontSize: 42,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF111827),
-                    ),
-                  ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: _buildMiniDropdown<String>(
+              value: _selectedCategory,
+              items: const [
+                DropdownMenuItem(value: 'all', child: Text("ทุกหมวดหมู่")),
+                DropdownMenuItem(value: 'food', child: Text("อาหาร/เครื่องดื่ม")),
+                DropdownMenuItem(value: 'boardgame', child: Text("บอร์ดเกม")),
+              ],
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() => _selectedCategory = val);
+                  _fetchRevenue();
+                }
+              },
+            ),
           ),
+          const SizedBox(height: 14),
+          _isLoading
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF059669)),
+                  ),
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    const Text(
+                      "฿",
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF059669),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      NumberFormat('#,##0.00').format(_totalRevenue),
+                      style: const TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
+                ),
         ],
       ),
     );
   }
 
-  Widget _buildCustomDropdown<T>({
+  Widget _buildMiniDropdown<T>({
     required T value,
     required List<DropdownMenuItem<T>> items,
     required ValueChanged<T?> onChanged,
   }) {
     return Container(
-      height: 32,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      height: 28,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFE2EBE6),
+        color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<T>(
           value: value,
           items: items,
           onChanged: onChanged,
-          icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF4A6B5D)),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: Color(0xFF64748B)),
           style: const TextStyle(
-            color: Color(0xFF4A6B5D),
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
+            color: Color(0xFF334155),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
           ),
           isDense: true,
         ),

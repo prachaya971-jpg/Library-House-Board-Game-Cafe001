@@ -554,13 +554,7 @@ class _ChenkbillbyorderState extends State<Chenkbillbyorder> {
                     pw.Text(dateStr, style: pw.TextStyle(font: thaiFont, fontSize: 9)),
                   ],
                 ),
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text('พนักงาน:', style: pw.TextStyle(font: thaiFont, fontSize: 9)),
-                    pw.Text('ID: $userId', style: pw.TextStyle(font: thaiFont, fontSize: 9)),
-                  ],
-                ),
+            
                 pw.Divider(thickness: 0.8, color: PdfColors.grey600),
 
                 pw.Row(

@@ -10,6 +10,7 @@ import 'package:cafa_boardgame/utils/appapi.dart';
 import 'package:cafa_boardgame/config/app_config.dart';
 import 'package:crypto/crypto.dart';
 import 'package:cafa_boardgame/utils/date_util.dart';
+import 'sale_emp_detail_page.dart';
 
 class Listemp extends StatefulWidget {
   final int? roleId;
@@ -441,109 +442,119 @@ class _ListempState extends State<Listemp> {
 
   // 3. แสดง Dialog ยืนยันการลบ
   Future<void> _showDeleteDialog(Map<String, dynamic> item) async {
-  final int empId = item['emp_id'] ?? 0;
-  final String empName = item['full_name'] ?? item['emp_first_name'] ?? '';
+    final int empId = item['emp_id'] ?? 0;
+    final String empName = item['full_name'] ?? item['emp_first_name'] ?? '';
 
-  final bool? confirm = await showDialog<bool>(
-    context: context,
-    builder: (ctx) {
-      return AlertDialog(
-        title: const Text('ยืนยันการลบข้อมูล'),
-        content: Text('คุณต้องการลบพนักงานชื่อ "$empName" ใช่หรือไม่?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('ยกเลิก', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('ลบ', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      );
-    },
-  );
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('ยืนยันการลบข้อมูล'),
+          content: Text('คุณต้องการลบพนักงานชื่อ "$empName" ใช่หรือไม่?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('ยกเลิก', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('ลบ', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
 
-  if (confirm == true && mounted) {
-    await _deleteemp(empId);
+    if (confirm == true && mounted) {
+      await _deleteemp(empId);
+    }
   }
-}
 
   // ส่ง API ลบข้อมูล
   Future<void> _deleteemp(int id) async {
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (ctx) => const Center(
-      child: CircularProgressIndicator(color: Colors.amber),
-    ),
-  );
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) =>
+          const Center(child: CircularProgressIndicator(color: Colors.amber)),
+    );
 
-  try {
-    final response = await AppAPI.post('/emp/delete-emp', {'emp_id': id});
+    try {
+      final response = await AppAPI.post('/emp/delete-emp', {'emp_id': id});
 
-    if (mounted) {
-      Navigator.of(context, rootNavigator: true).pop();
-    }
-
-    final jsonRes = jsonDecode(response.body);
-    if (!mounted) return;
-
-    if (response.statusCode == 200 && jsonRes['isError'] == false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('ลบข้อมูลสำเร็จ'),
-          backgroundColor: Colors.black,
-        ),
-      );
-
-      await _fetchemp();
-    } else {
-      String rawError = jsonRes['errorMessage']?.toString() ?? '';
-      String displayError = 'เกิดข้อผิดพลาด: $rawError';
-
-      if (rawError.contains('1451') ||
-          rawError.contains('foreign key constraint fails') ||
-          rawError.contains('ER_ROW_IS_REFERENCED')) {
-        displayError = 'ไม่สามารถลบได้ เนื่องจากมีประวัติการทำรายการในระบบแล้ว';
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(displayError),
-          backgroundColor: const Color.fromARGB(255, 2, 2, 2),
-        ),
-      );
-    }
-  } catch (e) {
-    // ปิดตัวหมุนโหลดเมื่อมี Exception
-    if (mounted) {
-      Navigator.of(context, rootNavigator: true).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('เกิดข้อผิดพลาด: $e'),
-          backgroundColor: Colors.red.shade800,
-        ),
-      );
+      final jsonRes = jsonDecode(response.body);
+      if (!mounted) return;
+
+      if (response.statusCode == 200 && jsonRes['isError'] == false) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('ลบข้อมูลสำเร็จ'),
+            backgroundColor: Colors.black,
+          ),
+        );
+
+        await _fetchemp();
+      } else {
+        String rawError = jsonRes['errorMessage']?.toString() ?? '';
+        String displayError = 'เกิดข้อผิดพลาด: $rawError';
+
+        if (rawError.contains('1451') ||
+            rawError.contains('foreign key constraint fails') ||
+            rawError.contains('ER_ROW_IS_REFERENCED')) {
+          displayError =
+              'ไม่สามารถลบได้ เนื่องจากมีประวัติการทำรายการในระบบแล้ว';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(displayError),
+            backgroundColor: const Color.fromARGB(255, 2, 2, 2),
+          ),
+        );
+      }
+    } catch (e) {
+      // ปิดตัวหมุนโหลดเมื่อมี Exception
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('เกิดข้อผิดพลาด: $e'),
+            backgroundColor: Colors.red.shade800,
+          ),
+        );
+      }
     }
   }
-}
 
   // 3. แสดง Dialog ยืนยันการลบ
   Future<void> _showupdatestatusDialog(Map<String, dynamic> item) async {
-    final int empId = item['emp_id'] ?? 0;
-    final String empName = item['full_name'];
-    final String empStatus = item['emp_status_id'];
+    // ดึงรหัสพนักงาน
+    final int empId = int.tryParse(item['emp_id']?.toString() ?? '0') ?? 0;
+
+    // รวมชื่อและนามสกุลจากคีย์จริงใน Map
+    final String firstName = item['emp_first_name']?.toString() ?? '';
+    final String lastName = item['emp_last_name']?.toString() ?? '';
+    final String empName = '$firstName $lastName'.trim();
+
+    // ดึงสถานะปัจจุบัน ('Y' = ทำงานอยู่)
+    final String empStatus = item['emp_status_id']?.toString() ?? 'Y';
+
+    if (!mounted) return;
 
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('ยืนยันการอัปเดตสถานะ'),
-          content: Text(
-            'คุณต้องการอัปเดตสถานะพนักงานชื่อ "$empName" ใช่หรือไม่?',
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
+          title: const Text('ยืนยันการอัปเดตสถานะ'),
+          content: Text('คุณต้องการอัปเดตสถานะพนักงาน "$empName" ใช่หรือไม่?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -574,7 +585,7 @@ class _ListempState extends State<Listemp> {
     try {
       final response = await AppAPI.post('/emp/update-emp-newstatus', {
         'emp_id': id,
-        ' ': status,
+        'emp_status_id': status,
       });
 
       final jsonRes = jsonDecode(response.body);
@@ -1297,8 +1308,35 @@ class _ListempState extends State<Listemp> {
                                       color: Colors.blue,
                                       size: 20,
                                     ),
-                                    onPressed: () => const Text("5555"),
-                                    tooltip: 'ดูรายละเอียด',
+                                    tooltip: 'ดูรายละเอียดการขาย',
+                                    onPressed: () {
+                                      final int empId =
+                                          int.tryParse(
+                                            item['emp_id']?.toString() ?? '0',
+                                          ) ??
+                                          0;
+                                      final String firstName =
+                                          item['emp_first_name']?.toString() ??
+                                          '';
+                                      final String lastName =
+                                          item['emp_last_name']?.toString() ??
+                                          '';
+                                      final String fullName =
+                                          '$firstName $lastName'.trim();
+
+                                      if (empId > 0) {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                SaleEmpDetailPage(
+                                                  empId: empId,
+                                                  empName: fullName,
+                                                ),
+                                          ),
+                                        );
+                                      }
+                                    },
                                   ),
                                   IconButton(
                                     icon: const Icon(
@@ -1333,8 +1371,9 @@ class _ListempState extends State<Listemp> {
                                       color: Color.fromARGB(255, 250, 79, 0),
                                       size: 20,
                                     ),
-                                    onPressed: () =>
-                                        _showupdatestatusDialog(item),
+                                    onPressed: () {
+                                      _showupdatestatusDialog(item);
+                                    },
                                     tooltip: 'เปลี่ยนสถานะพนักงาน',
                                   ),
                                 ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:cafa_boardgame/utils/appapi.dart';
+import 'sale_order_detail_page.dart';
 
 class Salereportfood extends StatefulWidget {
   const Salereportfood({super.key});
@@ -354,8 +355,27 @@ class _SalereportfoodState extends State<Salereportfood> {
                                 color: Colors.blue,
                                 size: 20,
                               ),
-                              onPressed: () => const Text('5555'),
                               tooltip: 'ดูรายละเอียด',
+                              onPressed: () {
+                                final int? orderId = item['order_id'];
+                                if (orderId != null) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => SaleOrderDetailPage(
+                                        orderId: orderId,
+                                        tableNumber: item['table_number'],
+                                      ),
+                                    ),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('ไม่พบหมายเลข Order ID'),
+                                    ),
+                                  );
+                                }
+                              },
                             ),
                           ],
                         ),

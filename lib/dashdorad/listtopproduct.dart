@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:cafa_boardgame/utils/appapi.dart';
 import 'package:cafa_boardgame/config/app_config.dart';
+import 'package:intl/intl.dart';
 
 class Listtopproduct extends StatefulWidget {
   const Listtopproduct({super.key});
@@ -242,13 +243,16 @@ class _ListtopproductState extends State<Listtopproduct> {
                   padding: EdgeInsets.all(32.0),
                   child: Center(child: Text('ไม่พบข้อมูลยอดขาย')),
                 )
-              : ListView.builder(
+              : // ใน listtopproduct.dart (ส่วนของการ Build Item ใน ListView)
+                // นำไปแทนที่ในส่วน ListView.builder ใน Listtopproduct
+                ListView.separated(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: _topProducts.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final item = _topProducts[index];
-
                     final num revenue =
                         num.tryParse(
                           item['total_revenue']?.toString() ?? '0',
@@ -260,114 +264,137 @@ class _ListtopproductState extends State<Listtopproduct> {
                         ) ??
                         0;
 
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      elevation: 0,
-                      color: const Color(0xFFF8F9FA),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Colors.grey.shade200),
+                    // สีกำกับ Rank 1, 2, 3
+                    Color rankBgColor = const Color(0xFFF1F5F9);
+                    Color rankTextColor = const Color(0xFF64748B);
+                    if (index == 0) {
+                      rankBgColor = const Color(0xFFFEF3C7);
+                      rankTextColor = const Color(0xFFB45309);
+                    } else if (index == 1) {
+                      rankBgColor = const Color(0xFFE2E8F0);
+                      rankTextColor = const Color(0xFF475569);
+                    } else if (index == 2) {
+                      rankBgColor = const Color(0xFFFFEDD5);
+                      rankTextColor = const Color(0xFFC2410C);
+                    }
+
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFF1F5F9)),
                       ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        leading: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Builder(
-                            builder: (context) {
-                              final item = _topProducts[index];
-
-                              final String? imageName = item['image'];
-                              final String? rawCategory = item['category'];
-
-                              // แปลงชื่อหมวดหมู่ภาษาไทยเป็นชื่อ Folder ภาษาอังกฤษ
-                              final String folderName = _getFolderName(
-                                rawCategory,
-                              );
-
-                              // กำหนด Base URL ตรงไปยัง /img/
-                              final String serverUrl = '${AppConfig.apiBaseUri.replaceAll('/api', '')}/img/';
-
-                              if (imageName != null && imageName.isNotEmpty) {
-                                final String imageUrl =
-                                    imageName.startsWith('http')
-                                    ? imageName
-                                    : '$serverUrl$folderName/$imageName';
-
-                                return Image.network(
-                                  imageUrl,
-                                  width: 44,
-                                  height: 44,
-                                  fit: BoxFit.cover,
-                                  loadingBuilder:
-                                      (context, child, loadingProgress) {
-                                        if (loadingProgress == null)
-                                          return child;
-                                        return Container(
-                                          width: 44,
-                                          height: 44,
-                                          color: Colors.brown[100],
-                                          child: const Center(
-                                            child: SizedBox(
-                                              width: 18,
-                                              height: 18,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                  errorBuilder: (context, error, stackTrace) {
-                                    print(" image isn't loading in URL: $imageUrl");
-                                    print(" ErrorMessage : $error");
-                                    return _buildPlaceholder();
-                                  },
-                                );
-                              }
-
-                              return _buildPlaceholder();
-                            },
-                          ),
-                        ),
-                        title: Text(
-                          item['product_name'] ?? '',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                          ),
-                        ),
-                        subtitle: Text(
-                          'หมวดหมู่: ${item['category'] ?? ''}',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 13,
-                          ),
-                        ),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              'จำนวน: $quantity',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                      child: Row(
+                        children: [
+                          // ป้ายอันดับ
+                          Container(
+                            width: 26,
+                            height: 26,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: rankBgColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              "${index + 1}",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                                color: rankTextColor,
                               ),
                             ),
-                            if (item['category'] != 'borrow')
+                          ),
+                          const SizedBox(width: 12),
+
+                          // รูปภาพสินค้า
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: Builder(
+                                builder: (context) {
+                                  final String? imageName = item['image'];
+                                  final String folderName = _getFolderName(
+                                    item['category'],
+                                  );
+                                  final String serverUrl =
+                                      '${AppConfig.apiBaseUri.replaceAll('/api', '')}/img/';
+
+                                  if (imageName != null &&
+                                      imageName.isNotEmpty) {
+                                    final String imageUrl =
+                                        imageName.startsWith('http')
+                                        ? imageName
+                                        : '$serverUrl$folderName/$imageName';
+                                    return Image.network(
+                                      imageUrl,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (ctx, err, stack) =>
+                                          _buildPlaceholder(),
+                                    );
+                                  }
+                                  return _buildPlaceholder();
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+
+                          // ชื่อสินค้า & หมวดหมู่
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item['product_name'] ?? '-',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  item['category'] ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF94A3B8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // ยอดขาย / จำนวน
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
                               Text(
-                                '฿${revenue.toStringAsFixed(0)}',
-                                style: TextStyle(
-                                  color: Colors.green[700],
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
+                                '$quantity ชิ้น',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                  color: Color(0xFF1E293B),
                                 ),
                               ),
-                          ],
-                        ),
+                              if (item['category'] != 'borrow') ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  '฿${NumberFormat('#,##0').format(revenue)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                    color: Color(0xFF059669),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
                       ),
                     );
                   },
@@ -377,7 +404,6 @@ class _ListtopproductState extends State<Listtopproduct> {
     );
   }
 
-  // 🔘 Widget ปุ่มสลับช่วงเวลา
   Widget _buildPeriodButton(String periodKey, String label) {
     final isSelected = _selectedPeriod == periodKey;
     return InkWell(
@@ -417,28 +443,27 @@ class _ListtopproductState extends State<Listtopproduct> {
     );
   }
 
-  // 🏷️ Widget ปุ่มเลือกหมวดหมู่
-  Widget _buildCategoryChip(String categoryKey, String label) {
-    final isSelected = _selectedCategory == categoryKey;
-    return ChoiceChip(
-      label: Text(label),
-      selected: isSelected,
-      selectedColor: const Color(0xFFD49A32),
-      backgroundColor: Colors.grey[100],
-      showCheckmark: false,
-      labelStyle: TextStyle(
-        color: isSelected ? Colors.white : Colors.black87,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        fontSize: 12,
-      ),
-      onSelected: (selected) {
-        if (selected) {
-          setState(() {
-            _selectedCategory = categoryKey;
-          });
-          _fetchTopProducts();
-        }
-      },
-    );
-  }
+ Widget _buildCategoryChip(String categoryKey, String label) {
+  final isSelected = _selectedCategory == categoryKey;
+  return ChoiceChip(
+    label: Text(label),
+    selected: isSelected,
+    selectedColor: const Color(0xFF0F172A),
+    backgroundColor: const Color(0xFFF8FAFC),
+    side: BorderSide(color: isSelected ? Colors.transparent : const Color(0xFFE2E8F0)),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    showCheckmark: false,
+    labelStyle: TextStyle(
+      color: isSelected ? Colors.white : const Color(0xFF64748B),
+      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+      fontSize: 13,
+    ),
+    onSelected: (selected) {
+      if (selected) {
+        setState(() => _selectedCategory = categoryKey);
+        _fetchTopProducts();
+      }
+    },
+  );
+}
 }

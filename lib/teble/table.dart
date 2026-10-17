@@ -10,6 +10,7 @@ import 'package:printing/printing.dart';
 import 'package:cafa_boardgame/config/app_config.dart';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 class Teble extends StatefulWidget {
   final int? roleId;
@@ -22,6 +23,7 @@ class Teble extends StatefulWidget {
 
 class _TebleState extends State<Teble> {
   bool _isLoading = false;
+  late IO.Socket socket;
   final TextEditingController _searchController = TextEditingController();
   List<dynamic> _TableList = [];
   int _currentRoleId = 2;
@@ -34,6 +36,19 @@ class _TebleState extends State<Teble> {
     _loadRole();
     _fetchTypes();
     _loadRoleFromToken();
+    _initSocket();
+  }
+
+  void dispose() {
+    socket.dispose();
+    super.dispose();
+  }
+
+  void _initSocket() {
+    socket = IO.io(AppConfig.socketUri, <String, dynamic>{
+      'transports': ['websocket'],
+      'autoConnect': true,
+    });
   }
 
   Future<void> _loadRole() async {
@@ -257,88 +272,179 @@ class _TebleState extends State<Teble> {
   }
 
   Future<void> _printTableQrCode(String tableNum) async {
-  final pdf = pw.Document();
+    final pdf = pw.Document();
 
-  final thaiFont = await PdfGoogleFonts.sarabunRegular();
-  final thaiFontBold = await PdfGoogleFonts.sarabunBold();
+    final thaiFont = await PdfGoogleFonts.sarabunRegular();
+    final thaiFontBold = await PdfGoogleFonts.sarabunBold();
 
-  final String tableNo = sha256.convert(utf8.encode(tableNum)).toString();
-  final String qrData = "${AppConfig.apicusBaseUri}/menu?table=$tableNo";
+    final String tableNo = sha256.convert(utf8.encode(tableNum)).toString();
+    final String qrData = "${AppConfig.apicusBaseUri}/menu?table=$tableNo";
 
-  pdf.addPage(
-    pw.Page(
-      pageFormat: PdfPageFormat.a6,
-      theme: pw.ThemeData.withFont(
-        base: thaiFont,
-        bold: thaiFontBold,
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a6,
+        theme: pw.ThemeData.withFont(base: thaiFont, bold: thaiFontBold),
+        build: (pw.Context context) {
+          return pw.Center(
+            child: pw.Container(
+              padding: const pw.EdgeInsets.all(16),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey400, width: 2),
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
+              ),
+              child: pw.Column(
+                mainAxisSize: pw.MainAxisSize.min,
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
+                children: [
+                  pw.Text(
+                    'LIBERTY BOARDGAME CAFE',
+                    style: pw.TextStyle(
+                      font: thaiFontBold,
+                      fontSize: 14,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.brown900,
+                    ),
+                  ),
+                  pw.SizedBox(height: 8),
+
+                  pw.Text(
+                    'โต๊ะ $tableNum',
+                    style: pw.TextStyle(
+                      font: thaiFontBold,
+                      fontSize: 22,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.SizedBox(height: 14),
+                  pw.BarcodeWidget(
+                    barcode: pw.Barcode.qrCode(),
+                    data: qrData,
+                    width: 140,
+                    height: 140,
+                  ),
+                  pw.SizedBox(height: 14),
+                  pw.Text(
+                    'ลิ้ง:$qrData',
+                    style: pw.TextStyle(fontSize: 9, font: thaiFont),
+                  ),
+                  pw.SizedBox(height: 14),
+                  pw.Text(
+                    'สแกนเพื่อสั่งอาหาร (Scan to Order)',
+                    style: pw.TextStyle(
+                      font: thaiFont,
+                      fontSize: 12,
+                      color: PdfColors.grey700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
-      build: (pw.Context context) {
-        return pw.Center(
-          child: pw.Container(
-            padding: const pw.EdgeInsets.all(16),
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.grey400, width: 2),
-              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'QRCode_Table_$tableNum.pdf',
+    );
+  }
+
+  Future<void> _showCloseTableDialog(String tableNum) async {
+  final bool? confirm = await showDialog<bool>(
+    context: context,
+    builder: (ctx) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: const [
+            Icon(Icons.warning_amber_rounded, color: Colors.red),
+            SizedBox(width: 8),
+            Text('ยืนยันการปิดโต๊ะ'),
+          ],
+        ),
+        content: Text(
+          'ต้องการปิดและเคลียร์โต๊ะ $tableNum ใช่หรือไม่?\n'
+          '(ระบบจะตรวจสอบว่าไม่มีออเดอร์ค้างชำระก่อนดำเนินการ)',
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('ยกเลิก', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
-            child: pw.Column(
-              mainAxisSize: pw.MainAxisSize.min,
-              crossAxisAlignment: pw.CrossAxisAlignment.center,
-              children: [
-                pw.Text(
-                  'LIBERTY BOARDGAME CAFE',
-                  style: pw.TextStyle(
-                    font: thaiFontBold,
-                    fontSize: 14,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.brown900,
-                  ),
-                ),
-                pw.SizedBox(height: 8),
-          
-                pw.Text(
-                  'โต๊ะ $tableNum',
-                  style: pw.TextStyle(
-                    font: thaiFontBold,
-                    fontSize: 22,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-                pw.SizedBox(height: 14),
-                pw.BarcodeWidget(
-                  barcode: pw.Barcode.qrCode(),
-                  data: qrData,
-                  width: 140,
-                  height: 140,
-                ),
-                pw.SizedBox(height: 14),
-                pw.Text(
-                  'ลิ้ง:$qrData',
-                  style: pw.TextStyle(
-                    fontSize: 9,
-                     font: thaiFont,)
-                  ),
-                pw.SizedBox(height: 14),
-                pw.Text(
-                  'สแกนเพื่อสั่งอาหาร (Scan to Order)',
-                  style: pw.TextStyle(
-                    font: thaiFont,
-                    fontSize: 12,
-                    color: PdfColors.grey700,
-                  ),
-                ),
-              ],
-            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('ยืนยันปิดโต๊ะ'),
+          ),
+        ],
+      );
+    },
+  );
+
+  
+  if (confirm == true && mounted) {
+    await _closeTable(tableNum);
+  }
+}
+
+Future<void> _closeTable(String tableNum) async {
+  setState(() => _isLoading = true);
+
+  try {
+    final response = await AppAPI.post('/table/updete-status-table', {
+      'table_no': tableNum,
+    });
+
+    final jsonRes = jsonDecode(response.body);
+
+    if (response.statusCode == 200 && jsonRes['isError'] == false) {
+     
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(jsonRes['message'] ?? 'อัปเดตสถานะโต๊ะ $tableNum สำเร็จ'),
+            backgroundColor: const Color.fromARGB(255, 9, 9, 9), // สีเขียว
           ),
         );
-      },
-    ),
-  );
-
-  await Printing.layoutPdf(
-    onLayout: (PdfPageFormat format) async => pdf.save(),
-    name: 'QRCode_Table_$tableNum.pdf',
-  );
+        _fetchTypes();
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(jsonRes['errorMessage'] ?? 'ไม่สามารถอัปเดตสถานะได้'),
+            backgroundColor: const Color.fromARGB(255, 0, 0, 0), 
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  } catch (e) {
+    debugPrint("Error updating table status: $e");
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('เกิดข้อผิดพลาดในการเชื่อมต่อ: $e'),
+          backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+        ),
+      );
+    }
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
+  }
 }
+
   @override
   Widget build(BuildContext context) {
     final bool isManager = _currentRoleId == 1;
@@ -495,27 +601,51 @@ class _TebleState extends State<Teble> {
                                       fontSize: 13,
                                     ),
                                   ),
-                                  // ย้ายปุ่มมาใส่ในช่อง trailing ตรงนี้
-                                  trailing: ElevatedButton.icon(
-                                    onPressed: () =>
-                                        _printTableQrCode(tableNum),
-                                    icon: const Icon(Icons.qr_code, size: 18),
-                                    label: const Text('พิมพ์ QR Code'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF2D3748),
-                                      foregroundColor: Colors.white,
-                                      elevation: 0,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 8,
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // ปุ่มพิมพ์ QR Code
+                                      ElevatedButton.icon(
+                                        onPressed: () =>
+                                            _printTableQrCode(tableNum),
+                                        icon: const Icon(
+                                          Icons.qr_code,
+                                          size: 18,
+                                        ),
+                                        label: const Text('พิมพ์ QR Code'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(
+                                            0xFF2D3748,
+                                          ),
+                                          foregroundColor: Colors.white,
+                                          elevation: 0,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 8,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                        ),
                                       ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
+                                      const SizedBox(width: 8),
+                                      // ปุ่มปิดโต๊ะ
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.lock_reset,
+                                          color: Colors.red,
+                                        ),
+                                        tooltip: 'ปิดโต๊ะ',
+                                        onPressed: () =>
+                                            _showCloseTableDialog(tableNum),
                                       ),
-                                    ),
+                                    ],
                                   ),
                                 ),
                               );
+                              ;
                             },
                           ),
                   ],

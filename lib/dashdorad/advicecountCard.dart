@@ -20,116 +20,132 @@ class _AdviceCountCardState extends State<AdviceCountCard> {
   }
 
   Future<void> _fetchAdviceCount() async {
-  setState(() => _isLoading = true);
+    setState(() => _isLoading = true);
 
-  try {
-    final response = await AppAPI.get('/reports/advice-count');
+    try {
+      final response = await AppAPI.get('/reports/advice-count');
+      final json = jsonDecode(response.body);
 
-    final json = jsonDecode(response.body);
-
-    if (!json['isError']) {
-      setState(() {
-        var rawCount = json['data']['total_advice'];
-        if (rawCount is int) {
-          _adviceCount = rawCount;
-        } else if (rawCount is String) {
-          _adviceCount = int.tryParse(rawCount) ?? 0;
-        } else {
-          _adviceCount = 0;
-        }
-      });
+      if (!json['isError']) {
+        setState(() {
+          var rawCount = json['data']['total_advice'];
+          if (rawCount is int) {
+            _adviceCount = rawCount;
+          } else if (rawCount is String) {
+            _adviceCount = int.tryParse(rawCount) ?? 0;
+          } else {
+            _adviceCount = 0;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching advice count: $e");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-  } catch (e) {
-    print("Error fetching advice count: $e");
-  } finally {
-    if (mounted) setState(() => _isLoading = false);
   }
-}
 
   @override
   Widget build(BuildContext context) {
+    const accentColor = Color(0xFF6366F1); // โทน Indigo
+
     return Container(
-      width: 260,
-      constraints: const BoxConstraints(
-        minHeight: 180, 
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+      width: 250,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: const Color(0xFF0F172A).withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // หัวข้อการ์ด
-          const Text(
-            "รายการคำแนะนำ",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1F2937),
-            ),
+          // แถวบน: Icon + Badge
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  color: accentColor,
+                  size: 22,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                
+              ),
+            ],
           ),
           const SizedBox(height: 16),
 
-          // ส่วนแสดงผลข้อมูล
-          Center(
-            child: _isLoading
-                ? const SizedBox(
-                    height: 40,
-                    width: 40,
-                    child: CircularProgressIndicator(color: Color(0xFF6E8B7E)),
-                  )
-                : _buildContent(),
+          // หัวข้อ
+          const Text(
+            "รายการขอคำแนะนำ",
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF64748B),
+            ),
           ),
+          const SizedBox(height: 6),
+
+          // ตัวเลขแสดงผล
+          _isLoading
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: accentColor,
+                    ),
+                  ),
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      "$_adviceCount",
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      "ข้อความ",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    ),
+                  ],
+                ),
         ],
       ),
-    );
-  }
-
-  Widget _buildContent() {
-    if (_adviceCount == 0) {
-      return const Text(
-        "ยังไม่มีคำแนะนำ",
-        style: TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF1F2937),
-        ),
-      );
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
-      children: [
-        Text(
-          "$_adviceCount",
-          style: const TextStyle(
-            fontSize: 42,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF111827),
-          ),
-        ),
-        const SizedBox(width: 8),
-        const Text(
-          "รายการ", // หรือใช้คำว่า "ออเดอร์"
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF6B7280),
-          ),
-        ),
-      ],
     );
   }
 }

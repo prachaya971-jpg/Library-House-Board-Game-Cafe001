@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:cafa_boardgame/utils/appapi.dart';
 import 'package:cafa_boardgame/socket_service.dart';
 
-
 class Reqtablecard extends StatefulWidget {
   const Reqtablecard({super.key});
 
@@ -12,29 +11,27 @@ class Reqtablecard extends StatefulWidget {
 }
 
 class _ReqtablecardState extends State<Reqtablecard> {
-  int  _tableRequestCount = 0;
+  int _tableRequestCount = 0;
   bool _isLoading = false;
 
   late final void Function(dynamic) _cardTableHandler;
+
   @override
   void initState() {
     super.initState();
     _fetchTableRequestCount();
 
     _cardTableHandler = (data) {
-      print(" [Reqtablecard] Real-time Triggered: ${data['table_number']}");
       if (mounted) {
         _fetchTableRequestCount();
       }
     };
-    
+
     _bindSocketListener();
   }
 
-
   void _bindSocketListener() {
     final socket = SocketService().socket;
-
     if (socket != null) {
       socket.off('new_table_request', _cardTableHandler);
       socket.on('new_table_request', _cardTableHandler);
@@ -46,28 +43,32 @@ class _ReqtablecardState extends State<Reqtablecard> {
   }
 
   Future<void> _fetchTableRequestCount() async {
-  try {
-    final response = await AppAPI.get('/table_requests/count');
+    setState(() => _isLoading = true);
+    try {
+      final response = await AppAPI.get('/table_requests/count');
 
-    if (response.statusCode == 200) {
-      final json = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
 
-      if (json['isError'] == false && json['data'] != null) {
-        if (mounted) {
-          setState(() {
-            _tableRequestCount = int.tryParse(
-              json['data']['total_pending_requests']?.toString() ?? '0',
-            ) ?? 0;
-          });
+        if (json['isError'] == false && json['data'] != null) {
+          if (mounted) {
+            setState(() {
+              _tableRequestCount = int.tryParse(
+                    json['data']['total_pending_requests']?.toString() ?? '0',
+                  ) ??
+                  0;
+            });
+          }
         }
       }
+    } catch (e) {
+      debugPrint("Error fetching table request count: $e");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-  } catch (e) {
-    print("Error fetching table request count: $e");
   }
-}
 
-@override
+  @override
   void dispose() {
     SocketService().socket?.off('new_table_request', _cardTableHandler);
     super.dispose();
@@ -75,88 +76,131 @@ class _ReqtablecardState extends State<Reqtablecard> {
 
   @override
   Widget build(BuildContext context) {
+    const accentColor = Color(0xFF0D9488); // โทน Teal
+
     return Container(
-      width: 260,
-      constraints: const BoxConstraints(
-        minHeight: 180, 
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+      width: 250,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: const Color(0xFF0F172A).withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // หัวข้อการ์ด
-          const Text(
-            "รายการขอเปิดโต๊ะ",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1F2937),
-            ),
+          // แถวบน: Icon Badge + ป้ายรอคิว
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.table_restaurant_rounded,
+                  color: accentColor,
+                  size: 22,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _tableRequestCount > 0
+                      ? const Color(0xFFFEF2F2)
+                      : const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_tableRequestCount > 0)
+                      Container(
+                        width: 6,
+                        height: 6,
+                        margin: const EdgeInsets.only(right: 5),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEF4444),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    Text(
+                      _tableRequestCount > 0 ? "รอดำเนินการ" : "ยังไม่มี",
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: _tableRequestCount > 0
+                            ? const Color(0xFFDC2626)
+                            : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
 
-          // ส่วนแสดงผลข้อมูล
-          Center(
-            child: _isLoading
-                ? const SizedBox(
-                    height: 40,
-                    width: 40,
-                    child: CircularProgressIndicator(color: Color(0xFF6E8B7E)),
-                  )
-                : _buildContent(),
+          // หัวข้อ
+          const Text(
+            "รายการขอเปิดโต๊ะ",
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF64748B),
+            ),
           ),
+          const SizedBox(height: 6),
+
+          // ตัวเลขแสดงผล
+          _isLoading
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: accentColor,
+                    ),
+                  ),
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      "$_tableRequestCount",
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      "โต๊ะ",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    ),
+                  ],
+                ),
         ],
       ),
-    );
-  }
-
-  Widget _buildContent() {
-    if (_tableRequestCount == 0) {
-      return const Text(
-        "ยังไม่มีขอเปิดโต๊ะ",
-        style: TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF1F2937),
-        ),
-      );
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
-      children: [
-        Text(
-          "$_tableRequestCount",
-          style: const TextStyle(
-            fontSize: 42,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF111827),
-          ),
-        ),
-        const SizedBox(width: 8),
-        const Text(
-          "รายการ", // หรือใช้คำว่า "ออเดอร์"
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF6B7280),
-          ),
-        ),
-      ],
     );
   }
 }

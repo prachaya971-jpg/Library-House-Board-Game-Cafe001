@@ -453,19 +453,6 @@ class _SaleBoardGamePageState extends State<SaleBoardGamePage> {
                     ),
                   ],
                 ),
-                pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                  children: [
-                    pw.Text(
-                      'พนักงาน:',
-                      style: pw.TextStyle(font: thaiFont, fontSize: 9),
-                    ),
-                    pw.Text(
-                      'ID: $user_id',
-                      style: pw.TextStyle(font: thaiFont, fontSize: 9),
-                    ),
-                  ],
-                ),
                 pw.Divider(thickness: 0.8, color: PdfColors.grey600),
 
                 pw.Row(
