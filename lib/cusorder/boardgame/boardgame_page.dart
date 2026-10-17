@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cafa_boardgame/utils/appapicus.dart';
 import 'package:cafa_boardgame/config/app_config.dart';
+import 'customerboardgame_borrow.dart';
 
 enum GameMode { sale, play }
 
@@ -19,22 +20,15 @@ class _BoardGamePageState extends State<BoardGamePage> {
   List<dynamic> _gamesList = [];
   List<dynamic> _filteredGamesList = [];
 
-  // คงไว้เฉพาะ Mock หมวดหมู่สำหรับแสดงผล UI Bar
-  final List<String> _categoriesList = [
-    'ทั้งหมด',
-    'Strategy',
-    'Family',
-    'Party',
-    'Card Game',
-    'Thematic',
-    'Abstract',
-  ];
+  List<String> _categoriesList = ['ทั้งหมด'];
+  String _selectedCategory = 'ทั้งหมด';
 
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    _fetchCategorie();
     _fetchGames();
   }
 
@@ -55,8 +49,9 @@ class _BoardGamePageState extends State<BoardGamePage> {
       if (response.statusCode == 200) {
         final jsonResult = jsonDecode(response.body);
         if (jsonResult != null && jsonResult['isError'] == false) {
-          final List rawData =
-              (jsonResult['data'] is List) ? jsonResult['data'] : [];
+          final List rawData = (jsonResult['data'] is List)
+              ? jsonResult['data']
+              : [];
 
           if (mounted) {
             setState(() {
@@ -73,7 +68,28 @@ class _BoardGamePageState extends State<BoardGamePage> {
     }
   }
 
-  // กรองเฉพาะคำค้นหาชื่อเกมอย่างเดียว
+  Future<void> _fetchCategorie() async {
+    try {
+      final response = await AppAPICUS.get('/boardgame/report-type');
+      if (response.statusCode == 200) {
+        final jsonResult = jsonDecode(response.body);
+        if (jsonResult != null && jsonResult['isError'] == false) {
+          final List rawTypes = jsonResult['data'] ?? [];
+          setState(() {
+            _categoriesList =
+                ['ทั้งหมด'] +
+                rawTypes
+                    .map((item) => (item['catagory_bg_name'] ?? '').toString())
+                    .where((name) => name.isNotEmpty)
+                    .toList();
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching categories: $e");
+    }
+  }
+
   void _applyFilter() {
     final query = _searchController.text.trim().toLowerCase();
 
@@ -84,7 +100,17 @@ class _BoardGamePageState extends State<BoardGamePage> {
             .toString()
             .toLowerCase();
 
-        return query.isEmpty || name.contains(query);
+        final catString = (item['catagory_bg_name'] ?? '')
+            .toString()
+            .toLowerCase();
+
+        final matchesQuery = query.isEmpty || name.contains(query);
+
+        final matchesCategory =
+            _selectedCategory == 'ทั้งหมด' ||
+            catString.contains(_selectedCategory.toLowerCase());
+
+        return matchesQuery && matchesCategory;
       }).toList();
     });
   }
@@ -116,30 +142,51 @@ class _BoardGamePageState extends State<BoardGamePage> {
                       ),
                     )
                   : _filteredGamesList.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'ไม่พบบอร์ดเกมที่ค้นหา',
-                            style: TextStyle(color: Colors.grey, fontSize: 14),
-                          ),
-                        )
-                      : GridView.builder(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                          itemCount: _filteredGamesList.length,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
+                  ? const Center(
+                      child: Text(
+                        'ไม่พบบอร์ดเกมที่ค้นหา',
+                        style: TextStyle(color: Colors.grey, fontSize: 14),
+                      ),
+                    )
+                  : GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      itemCount: _filteredGamesList.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
                             childAspectRatio: 0.74,
                           ),
-                          itemBuilder: (context, index) {
-                            return _buildGameCard(_filteredGamesList[index]);
-                          },
-                        ),
+                      itemBuilder: (context, index) {
+                        return _buildGameCard(_filteredGamesList[index]);
+                      },
+                    ),
             ),
           ],
         ),
       ),
+
+      floatingActionButton: _currentMode == GameMode.play
+          ? FloatingActionButton(
+              backgroundColor: const Color(0xFFE5A93C),
+              elevation: 4,
+              shape: const CircleBorder(),
+              onPressed: () {
+                debugPrint("กดปุ่มรายการยืมบอร์ดเกม");
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CustomerboardgameBorrow()),
+                );
+              },
+              child: const Icon(
+                Icons.bookmark_add_rounded,
+                color: Colors.black87,
+                size: 28,
+              ),
+            )
+            // Playing_Cards
+          : null, // ถ้าเป็นโหมด Sale จะไม่แสดงปุ่มลอยนี้
     );
   }
 
@@ -241,22 +288,35 @@ class _BoardGamePageState extends State<BoardGamePage> {
         itemCount: _categoriesList.length,
         itemBuilder: (context, index) {
           final catName = _categoriesList[index];
-          final isFirst = index == 0;
+          final isSelected = catName == _selectedCategory;
 
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: isFirst ? const Color(0xFFE5A93C) : Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Center(
-              child: Text(
-                catName,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isFirst ? FontWeight.bold : FontWeight.normal,
-                  color: isFirst ? Colors.white : Colors.black87,
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedCategory = catName;
+                _applyFilter();
+              });
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color(0xFFE5A93C)
+                    : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Center(
+                child: Text(
+                  catName,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    color: isSelected ? Colors.white : Colors.black87,
+                  ),
                 ),
               ),
             ),
@@ -268,10 +328,10 @@ class _BoardGamePageState extends State<BoardGamePage> {
 
   Widget _buildGameCard(dynamic item) {
     final isSale = _currentMode == GameMode.sale;
-    final String name =
-        (item[isSale ? 'bg_name' : 'bgp_name'] ?? '').toString();
-    final String? imgName =
-        (item[isSale ? 'img_game_sale' : 'img_game_play'])?.toString();
+    final String name = (item[isSale ? 'bg_name' : 'bgp_name'] ?? '')
+        .toString();
+    final String? imgName = (item[isSale ? 'img_game_sale' : 'img_game_play'])
+        ?.toString();
     final String price = (item['price'] ?? '').toString();
     final String categories = (item['catagory_bg_name'] ?? '').toString();
 
@@ -328,10 +388,7 @@ class _BoardGamePageState extends State<BoardGamePage> {
                 const SizedBox(height: 2),
                 Text(
                   categories,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -348,8 +405,10 @@ class _BoardGamePageState extends State<BoardGamePage> {
                 )
               else
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.green.shade50,
                     borderRadius: BorderRadius.circular(4),

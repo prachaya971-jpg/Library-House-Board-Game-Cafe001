@@ -8,6 +8,9 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 class ReportBoardgameforborrow extends StatefulWidget {
   final int? roleId;
@@ -91,7 +94,7 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
 
   //คำสั่งสร้าง Qrcode
   Widget buildQrCode(dynamic qr) {
-    final String qrdata = qr.toString();
+    final String qrdata = "$qr";
 
     return QrImageView(
       data: qrdata,
@@ -133,6 +136,8 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
         : '';
 
     final String qrcodedata = item['bgp_id'].toString();
+
+    final String qrdata = qrcodedata;
 
     showDialog(
       context: context,
@@ -253,6 +258,24 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
                       ),
                     ),
                     const SizedBox(height: 8),
+
+                    // id
+                    Row(
+                      children: [
+                        const Text(
+                          'id: ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        Text(
+                          qrdata,
+                          style: const TextStyle(color: Colors.black87),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
 
                     // จำนวน
                     Row(
@@ -498,7 +521,6 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
                       ),
                       const SizedBox(height: 8),
 
-                      // 💡 เปลี่ยนจาก ListView.builder ซ้อนเดี่ยว มาใช้ Column.generate เพื่อป้องกัน Layout Crash
                       if (_typesList.isEmpty)
                         const Padding(
                           padding: EdgeInsets.all(16.0),
@@ -741,6 +763,63 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
     }
   }
 
+  Future<void> _printTableQrCode(String  qrdata) async {
+    final pdf = pw.Document();
+
+    final thaiFont = await PdfGoogleFonts.sarabunRegular();
+    final thaiFontBold = await PdfGoogleFonts.sarabunBold();
+
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a6,
+        theme: pw.ThemeData.withFont(base: thaiFont, bold: thaiFontBold),
+        build: (pw.Context context) {
+          return pw.Center(
+            child: pw.Container(
+              padding: const pw.EdgeInsets.all(16),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey400, width: 2),
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
+              ),
+              child: pw.Column(
+                mainAxisSize: pw.MainAxisSize.min,
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
+                children: [
+                  
+                  pw.Text(
+                    'Id $qrdata',
+                    style: pw.TextStyle(
+                      font: thaiFontBold,
+                      fontSize: 22,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.SizedBox(height: 14),
+                  pw.BarcodeWidget(
+                    barcode: pw.Barcode.qrCode(),
+                    data: qrdata,
+                    width: 140,
+                    height: 140,
+                  ),
+                  pw.SizedBox(height: 14),
+  
+                  pw.SizedBox(height: 14),
+  
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'QRCode_Table_$qrdata.pdf',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isManager = _currentRoleId == 1;
@@ -862,6 +941,7 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
                     final String typeName = item['bgp_name'] ?? '';
                     final String? imgicon =
                         item['img_game_play'] ?? item['borrow_img'];
+                    final String id = item['bgp_id'].toString();
 
                     final String baseUrl = AppConfig.apiBaseUri
                         .replaceAll('/api', '')
@@ -904,6 +984,32 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
                             ? Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
+                                  ElevatedButton.icon(
+                                        onPressed: () =>
+                                          _printTableQrCode(id),
+                                        icon: const Icon(
+                                          Icons.qr_code,
+                                          size: 18,
+                                        ),
+                                        label: const Text('พิมพ์ QR Code'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(
+                                            0xFF2D3748,
+                                          ),
+                                          foregroundColor: Colors.white,
+                                          elevation: 0,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 8,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
                                   IconButton(
                                     icon: const Icon(
                                       Icons.visibility,
@@ -929,6 +1035,9 @@ class _ReportBoardgameforborrowState extends State<ReportBoardgameforborrow> {
                                     onPressed: () => _showDeleteDialog(item),
                                     tooltip: 'ลบ',
                                   ),
+                                    const SizedBox(width: 8),
+                                    
+                                  
                                 ],
                               )
                             : null,

@@ -189,6 +189,11 @@ void dispose() {
         targetScreen: '/chenkbytable',
         allowedRoles: [1, 2],
       ),
+       SidebarMenuItem(
+        title: "ยืมบอร์ดเกม",
+        targetScreen: '/borrowsave',
+        allowedRoles: [1, 2],
+      ),
       SidebarMenuItem(
         title: "เพิ่มข้อมูลประเภทอาหาร",
         targetScreen: '/create',
@@ -224,6 +229,7 @@ void dispose() {
         targetScreen: '/table',
         allowedRoles: [1, 2],
       ),
+     
     ];
 
     final visibleMenus = allMenus
